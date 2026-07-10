@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050b16" />
+  <title>O2 Stánek – Display</title>
+  <style>
+    :root {
+      --ink-950: #050b16;
+      --ink-900: #08111d;
+      --ink-850: #0f1b2e;
+      --text: #f5f9ff;
+      --muted: rgba(230, 239, 255, 0.56);
+      --muted-strong: rgba(230, 239, 255, 0.76);
+      --line: rgba(145, 168, 220, 0.18);
+      --blue: #1f59ff;
+      --cyan: #72e9ff;
+      --emerald: #53e0b5;
+      --font-ui: "Avenir Next", "Segoe UI", sans-serif;
+      --font-display: "DIN Alternate", "Avenir Next Condensed", "Helvetica Neue", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--ink-950);
+      color: var(--text);
+      font-family: var(--font-ui);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 50% 24%, rgba(31, 89, 255, 0.30), transparent 34%),
+        radial-gradient(circle at 78% 12%, rgba(114, 233, 255, 0.14), transparent 18%),
+        linear-gradient(180deg, #07111d 0%, #040810 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.18;
+      mask-image: radial-gradient(circle at center, black 36%, transparent 86%);
+    }
+
+    body.embed-mode::before {
+      opacity: 0.08;
+    }
+
+    .screen {
+      position: relative;
+      height: 100%;
+      padding:
+        max(18px, env(safe-area-inset-top))
+        max(22px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom))
+        max(22px, env(safe-area-inset-left));
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 56px;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .topbar.chrome-hidden {
+      opacity: 0;
+      transform: translateY(-12px);
+      pointer-events: none;
+    }
+
+    body.embed-mode .topbar,
+    body.focus-mode .topbar {
+      opacity: 0;
+      transform: translateY(-12px);
+      pointer-events: none;
+      min-height: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: clamp(112px, 12vw, 172px);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.24));
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .brand-copy strong {
+      font-size: 1rem;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-copy span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .fullscreen-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 11px 18px;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+
+    .fullscreen-btn:hover { transform: translateY(-1px); border-color: rgba(114,233,255,0.32); }
+
+    .stage {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .stage::before,
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: auto;
+      border-radius: 999px;
+      filter: blur(90px);
+      pointer-events: none;
+      opacity: 0.62;
+    }
+
+    .stage::before {
+      width: min(42vw, 520px);
+      height: min(42vw, 520px);
+      left: 12%;
+      top: 18%;
+      background: rgba(31, 89, 255, 0.18);
+    }
+
+    .stage::after {
+      width: min(26vw, 300px);
+      height: min(26vw, 300px);
+      right: 14%;
+      bottom: 14%;
+      background: rgba(114, 233, 255, 0.12);
+    }
+
+    .scene-stack {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scene-panel {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.985);
+      transition: opacity 320ms ease, transform 320ms ease;
+    }
+
+    .scene-panel.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .scene-kicker {
+      font-size: clamp(0.78rem, 1.4vw, 1rem);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .scene-subtle {
+      color: var(--muted);
+      font-size: clamp(0.9rem, 2vw, 1.35rem);
+      line-height: 1.5;
+    }
+
+    .display-numeric {
+      font-family: var(--font-display);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.06em;
+      line-height: 0.88;
+    }
+
+    .timer-num,
+    .clock-digital-time,
+    .return-time-big {
+      font-family: var(--font-display);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.065em;
+      line-height: 0.86;
+      color: var(--cyan);
+      text-shadow: 0 0 36px rgba(114,233,255,0.24), 0 0 100px rgba(31,89,255,0.18);
+    }
+
+    .timer-num,
+    .clock-digital-time {
+      font-size: clamp(5rem, 26vw, 15rem);
+      font-weight: 900;
+    }
+
+    .timer-num.finished {
+      color: var(--text);
+      text-shadow: 0 0 26px rgba(255,255,255,0.14);
+    }
+
+    .timer-progress {
+      margin-top: clamp(18px, 3vh, 28px);
+      width: min(62vw, 760px);
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .timer-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(31,89,255,1), rgba(114,233,255,1));
+      box-shadow: 0 0 24px rgba(114,233,255,0.28);
+      transition: width 260ms linear;
+    }
+
+    .timer-meta {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pause-word {
+      font-size: clamp(4rem, 20vw, 11rem);
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: var(--cyan);
+      text-shadow: 0 0 40px rgba(114,233,255,0.22);
+      animation: pulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.48; }
+    }
+
+    .main-text-display {
+      font-size: clamp(2rem, 6.4vw, 5.8rem);
+      line-height: 1.18;
+      font-weight: 760;
+      max-width: min(84vw, 1200px);
+      white-space: pre-wrap;
+      word-break: break-word;
+      letter-spacing: -0.03em;
+      text-wrap: balance;
+    }
+
+    #panel-return {
+      gap: 10px;
+    }
+
+    .return-now-wrap {
+      display: grid;
+      gap: 10px;
+      place-items: center;
+      margin-bottom: clamp(10px, 2.5vh, 22px);
+    }
+
+    .return-now-label {
+      font-size: clamp(0.72rem, 1.2vw, 0.9rem);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .return-now-digital {
+      font-size: clamp(2.6rem, 10vw, 6rem);
+      font-weight: 900;
+      color: rgba(245,249,255,0.62);
+      font-family: var(--font-display);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.05em;
+      line-height: 0.92;
+    }
+
+    .return-analog-wrap.hidden,
+    .digital-clock-wrap.hidden,
+    .analog-clock.hidden,
+    .return-now-digital.hidden {
+      display: none !important;
+    }
+
+    .return-analog-svg,
+    .analog-svg {
+      overflow: visible;
+    }
+
+    .return-analog-svg {
+      width: clamp(140px, 18vw, 240px);
+      height: clamp(140px, 18vw, 240px);
+    }
+
+    .return-divider {
+      width: clamp(90px, 14vw, 180px);
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(31,89,255,0.0), rgba(114,233,255,0.66), rgba(31,89,255,0.0));
+      margin: clamp(10px, 2vh, 24px) auto;
+    }
+
+    .return-label {
+      font-size: clamp(0.88rem, 2vw, 1.3rem);
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .return-time-big {
+      font-size: clamp(4rem, 19vw, 10.5rem);
+      font-weight: 900;
+    }
+
+    .clock-scene {
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+    }
+
+    .digital-clock-wrap {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+    }
+
+    .clock-date {
+      color: var(--muted);
+      font-size: clamp(0.9rem, 2vw, 1.55rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .analog-clock {
+      width: clamp(200px, 32vw, 440px);
+      height: clamp(200px, 32vw, 440px);
+    }
+
+    .idle-stage {
+      position: relative;
+      width: min(70vw, 980px);
+      height: min(52vw, 620px);
+      max-width: 90vw;
+      max-height: 70vh;
+      display: grid;
+      place-items: center;
+    }
+
+    .idle-stage::before,
+    .idle-stage::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(12px);
+      opacity: 0.9;
+    }
+
+    .idle-stage::before {
+      width: 36%;
+      height: 36%;
+      background: radial-gradient(circle, rgba(31,89,255,0.55), transparent 68%);
+      top: 8%;
+      left: 10%;
+      animation: drift-a 13s ease-in-out infinite alternate;
+    }
+
+    .idle-stage::after {
+      width: 28%;
+      height: 28%;
+      background: radial-gradient(circle, rgba(114,233,255,0.42), transparent 70%);
+      right: 12%;
+      bottom: 12%;
+      animation: drift-b 11s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift-a {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(42px, 28px, 0); }
+    }
+
+    @keyframes drift-b {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-34px, -20px, 0); }
+    }
+
+    .idle-logo {
+      position: relative;
+      width: min(76vw, 820px);
+      max-width: 88vw;
+      height: auto;
+      display: block;
+      filter:
+        drop-shadow(0 30px 80px rgba(0, 0, 0, 0.34))
+        drop-shadow(0 0 40px rgba(31, 89, 255, 0.18));
+      animation: idle-float 5s ease-in-out infinite;
+    }
+
+    @keyframes idle-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-14px); }
+    }
+
+    .idle-caption {
+      margin-top: clamp(26px, 4vh, 42px);
+      font-size: clamp(1rem, 2.3vw, 1.8rem);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(245,249,255,0.72);
+    }
+
+    #panel-blank {
+      background: transparent;
+    }
+
+    .subtitle-bar,
+    .contact-strip {
+      position: relative;
+      z-index: 3;
+      flex-shrink: 0;
+      align-self: center;
+      max-width: min(94vw, 1520px);
+      width: 100%;
+    }
+
+    .subtitle-bar {
+      margin-top: auto;
+      margin-bottom: 10px;
+      padding: 18px 26px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(7, 14, 26, 0.62);
+      backdrop-filter: blur(16px);
+      color: rgba(245,249,255,0.82);
+      text-align: center;
+      font-size: clamp(1rem, 2.8vw, 2rem);
+      line-height: 1.45;
+      text-wrap: balance;
+    }
+
+    .contact-strip {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: clamp(14px, 3vw, 38px);
+      padding: 18px 26px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(7, 14, 26, 0.72);
+      backdrop-filter: blur(18px);
+    }
+
+    .contact-label {
+      font-size: clamp(0.72rem, 1.2vw, 0.9rem);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .contact-name-disp {
+      font-size: clamp(1.15rem, 2.6vw, 2rem);
+      font-weight: 700;
+      color: var(--muted-strong);
+      letter-spacing: -0.03em;
+    }
+
+    .contact-phone-disp {
+      font-size: clamp(1.3rem, 3.4vw, 2.7rem);
+      font-weight: 900;
+      color: var(--cyan);
+      font-family: var(--font-display);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em;
+      text-shadow: 0 0 26px rgba(114,233,255,0.18);
+    }
+
+    .contact-sep {
+      width: 1px;
+      height: 44px;
+      background: rgba(255,255,255,0.12);
+      justify-self: center;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 900px) {
+      .contact-strip {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+      }
+      .contact-sep { display: none; }
+    }
+
+    @media (max-width: 720px) {
+      .screen {
+        padding:
+          max(12px, env(safe-area-inset-top))
+          max(14px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom))
+          max(14px, env(safe-area-inset-left));
+      }
+      .main-text-display {
+        max-width: 92vw;
+      }
+      .subtitle-bar,
+      .contact-strip {
+        padding: 14px 16px;
+        border-radius: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <header id="topbar" class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/assets/o2-guru-logo.svg" alt="O2 Guru" />
+        <div class="brand-copy">
+          <strong>Stánek Display</strong>
+          <span>Live output</span>
+        </div>
+      </div>
+      <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
+    </header>
+
+    <main class="stage">
+      <div class="scene-stack">
+        <section id="panel-timer" class="scene-panel active">
+          <div class="scene-kicker">Odpočet</div>
+          <div id="timerNum" class="timer-num">15:00</div>
+          <div class="timer-progress"><div id="timerProgressFill" class="timer-progress-fill"></div></div>
+          <div id="timerMeta" class="timer-meta">Připraveno ke spuštění</div>
+        </section>
+
+        <section id="panel-return" class="scene-panel">
+          <div class="return-now-wrap">
+            <div class="return-now-label">Aktuální čas</div>
+            <div id="returnNowDigital" class="return-now-digital">00:00</div>
+            <div id="returnAnalogWrap" class="return-analog-wrap hidden">
+              <svg class="return-analog-svg" viewBox="0 0 200 200" aria-hidden="true">
+                <circle cx="100" cy="100" r="95" fill="rgba(255,255,255,0.03)" stroke="rgba(145,168,220,0.18)" stroke-width="1.5"></circle>
+                <g id="rClockTicks"></g>
+                <line id="rHrHand" x1="100" y1="112" x2="100" y2="54" stroke="white" stroke-width="5.2" stroke-linecap="round"></line>
+                <line id="rMinHand" x1="100" y1="118" x2="100" y2="34" stroke="white" stroke-width="3.5" stroke-linecap="round"></line>
+                <line id="rSecHand" x1="100" y1="122" x2="100" y2="24" stroke="#72e9ff" stroke-width="2" stroke-linecap="round"></line>
+                <circle cx="100" cy="100" r="5" fill="#72e9ff"></circle>
+                <circle cx="100" cy="100" r="2" fill="white"></circle>
+              </svg>
+            </div>
+          </div>
+          <div class="return-divider"></div>
+          <div class="return-label">Vrátím se</div>
+          <div id="returnTimeBig" class="return-time-big">—</div>
+        </section>
+
+        <section id="panel-clock" class="scene-panel">
+          <div class="clock-scene">
+            <div class="scene-kicker">Hodiny</div>
+            <div id="digitalClockWrap" class="digital-clock-wrap">
+              <div id="digitalTime" class="clock-digital-time">00:00</div>
+              <div id="clockDate" class="clock-date"></div>
+            </div>
+            <svg id="analogClock" class="analog-clock hidden" viewBox="0 0 200 200" aria-hidden="true">
+              <circle cx="100" cy="100" r="95" fill="rgba(255,255,255,0.03)" stroke="rgba(145,168,220,0.18)" stroke-width="1.5"></circle>
+              <g id="clockTicks"></g>
+              <line id="hrHand" x1="100" y1="112" x2="100" y2="50" stroke="white" stroke-width="5.4" stroke-linecap="round"></line>
+              <line id="minHand" x1="100" y1="118" x2="100" y2="30" stroke="white" stroke-width="3.6" stroke-linecap="round"></line>
+              <line id="secHand" x1="100" y1="122" x2="100" y2="20" stroke="#72e9ff" stroke-width="2" stroke-linecap="round"></line>
+              <circle cx="100" cy="100" r="5" fill="#72e9ff"></circle>
+              <circle cx="100" cy="100" r="2" fill="white"></circle>
+            </svg>
+          </div>
+        </section>
+
+        <section id="panel-pause" class="scene-panel">
+          <div class="scene-kicker">Technická pauza</div>
+          <div class="pause-word">PAUZA</div>
+          <div class="scene-subtle" style="margin-top: 18px;">Scéna je připravená pro krátké přerušení bez dalšího vysvětlování.</div>
+        </section>
+
+        <section id="panel-text" class="scene-panel">
+          <div class="scene-kicker">Zpráva</div>
+          <div id="mainTextEl" class="main-text-display"></div>
+        </section>
+
+        <section id="panel-logo" class="scene-panel">
+          <div class="scene-kicker">Idle režim</div>
+          <div class="idle-stage">
+            <img class="idle-logo" src="/assets/o2-guru-logo.svg" alt="O2 Guru" />
+          </div>
+          <div class="idle-caption">Standby display</div>
+        </section>
+
+        <section id="panel-blank" class="scene-panel"></section>
+      </div>
+    </main>
+
+    <div id="subtitleBar" class="subtitle-bar hidden"></div>
+
+    <div id="contactStrip" class="contact-strip hidden">
+      <div>
+        <div class="contact-label">Kontakt</div>
+        <div id="contactNameDisp" class="contact-name-disp"></div>
+      </div>
+      <div class="contact-sep"></div>
+      <div id="contactPhoneDisp" class="contact-phone-disp"></div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const isEmbed = params.get('embed') === '1';
+    if (isEmbed) document.body.classList.add('embed-mode');
+
+    const panels = {
+      timer: document.getElementById('panel-timer'),
+      return: document.getElementById('panel-return'),
+      clock: document.getElementById('panel-clock'),
+      pause: document.getElementById('panel-pause'),
+      text: document.getElementById('panel-text'),
+      logo: document.getElementById('panel-logo'),
+      blank: document.getElementById('panel-blank'),
+    };
+
+    const topbar = document.getElementById('topbar');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+    const timerNum = document.getElementById('timerNum');
+    const timerMeta = document.getElementById('timerMeta');
+    const timerProgressFill = document.getElementById('timerProgressFill');
+
+    const returnTimeBig = document.getElementById('returnTimeBig');
+    const returnNowDigital = document.getElementById('returnNowDigital');
+    const returnAnalogWrap = document.getElementById('returnAnalogWrap');
+    const rHrHand = document.getElementById('rHrHand');
+    const rMinHand = document.getElementById('rMinHand');
+    const rSecHand = document.getElementById('rSecHand');
+    const rClockTicks = document.getElementById('rClockTicks');
+
+    const digitalClockWrap = document.getElementById('digitalClockWrap');
+    const digitalTime = document.getElementById('digitalTime');
+    const clockDate = document.getElementById('clockDate');
+    const analogClock = document.getElementById('analogClock');
+    const hrHand = document.getElementById('hrHand');
+    const minHand = document.getElementById('minHand');
+    const secHand = document.getElementById('secHand');
+    const clockTicks = document.getElementById('clockTicks');
+
+    const mainTextEl = document.getElementById('mainTextEl');
+    const subtitleBar = document.getElementById('subtitleBar');
+    const contactStrip = document.getElementById('contactStrip');
+    const contactNameDisp = document.getElementById('contactNameDisp');
+    const contactPhoneDisp = document.getElementById('contactPhoneDisp');
+    const contactSep = document.querySelector('.contact-sep');
+
+    const DAYS = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    const MONTHS = ['ledna', 'února', 'března', 'dubna', 'května', 'června', 'července', 'srpna', 'září', 'října', 'listopadu', 'prosince'];
+
+    let currentMode = 'timer';
+    let currentClockStyle = null;
+    let clockTickId = null;
+    let wakeLock = null;
+    let chromeTimer = null;
+
+    function fmt(seconds) {
+      const n = Math.max(0, Number(seconds) || 0);
+      return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    }
+
+    function buildTicks(container) {
+      container.innerHTML = '';
+      for (let i = 0; i < 60; i += 1) {
+        const angle = (i * 6 - 90) * Math.PI / 180;
+        const isHour = i % 5 === 0;
+        const r1 = isHour ? 76 : 86;
+        const r2 = 93;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', (100 + r1 * Math.cos(angle)).toFixed(2));
+        line.setAttribute('y1', (100 + r1 * Math.sin(angle)).toFixed(2));
+        line.setAttribute('x2', (100 + r2 * Math.cos(angle)).toFixed(2));
+        line.setAttribute('y2', (100 + r2 * Math.sin(angle)).toFixed(2));
+        line.setAttribute('stroke', isHour ? 'rgba(255,255,255,0.86)' : 'rgba(255,255,255,0.24)');
+        line.setAttribute('stroke-width', isHour ? '2.5' : '1');
+        line.setAttribute('stroke-linecap', 'round');
+        container.appendChild(line);
+      }
+    }
+
+    function rotateHand(el, deg) {
+      el.setAttribute('transform', `rotate(${deg.toFixed(3)}, 100, 100)`);
+    }
+
+    function tickClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const hm = `${h}:${m}`;
+      digitalTime.textContent = hm;
+      returnNowDigital.textContent = hm;
+      clockDate.textContent = `${DAYS[now.getDay()]}, ${now.getDate()}. ${MONTHS[now.getMonth()]}`;
+
+      const s = now.getSeconds();
+      const mn = now.getMinutes();
+      const hr = now.getHours() % 12;
+      const secDeg = s * 6;
+      const minDeg = mn * 6 + s * 0.1;
+      const hrDeg = hr * 30 + mn * 0.5;
+
+      rotateHand(secHand, secDeg);
+      rotateHand(minHand, minDeg);
+      rotateHand(hrHand, hrDeg);
+      rotateHand(rSecHand, secDeg);
+      rotateHand(rMinHand, minDeg);
+      rotateHand(rHrHand, hrDeg);
+    }
+
+    function startClock() {
+      tickClock();
+      if (!clockTickId) clockTickId = setInterval(tickClock, 1000);
+    }
+
+    function stopClock() {
+      if (clockTickId) {
+        clearInterval(clockTickId);
+        clockTickId = null;
+      }
+    }
+
+    function setMode(mode) {
+      if (currentMode === mode) return;
+      currentMode = mode;
+      Object.entries(panels).forEach(([name, panel]) => panel.classList.toggle('active', name === mode));
+      if (mode === 'clock' || mode === 'return') startClock(); else stopClock();
+    }
+
+    function setClockStyle(style) {
+      if (currentClockStyle === style) return;
+      currentClockStyle = style;
+      digitalClockWrap.classList.toggle('hidden', style !== 'digital');
+      analogClock.classList.toggle('hidden', style !== 'analog');
+      returnNowDigital.classList.toggle('hidden', style !== 'digital');
+      returnAnalogWrap.classList.toggle('hidden', style !== 'analog');
+    }
+
+    function renderTimer(state) {
+      timerNum.textContent = fmt(state.remainingSeconds);
+      timerNum.classList.toggle('finished', Boolean(state.finished));
+      const duration = Math.max(0, Number(state.durationSeconds) || 0);
+      const remaining = Math.max(0, Number(state.remainingSeconds) || 0);
+      const progress = duration > 0 ? Math.min(100, Math.max(0, ((duration - remaining) / duration) * 100)) : 0;
+      timerProgressFill.style.width = `${progress}%`;
+
+      if (state.running) timerMeta.textContent = 'Odpočet právě běží';
+      else if (state.finished) timerMeta.textContent = 'Čas vypršel';
+      else timerMeta.textContent = `Připraveno: ${fmt(duration)}`;
+    }
+
+    function render(state) {
+      setMode(state.mainMode);
+      setClockStyle(state.clockStyle || 'digital');
+
+      renderTimer(state);
+      mainTextEl.textContent = state.mainText || '—';
+      returnTimeBig.textContent = state.returnTime || '—';
+
+      subtitleBar.classList.toggle('hidden', !state.showSubtitle || !state.subtitleText);
+      subtitleBar.textContent = state.subtitleText || '';
+
+      const showContact = state.showContact && (state.contactName || state.contactPhone);
+      contactStrip.classList.toggle('hidden', !showContact);
+      contactNameDisp.textContent = state.contactName || 'Kontakt';
+      contactPhoneDisp.textContent = state.contactPhone || '';
+      contactSep.classList.toggle('hidden', !(state.contactName && state.contactPhone));
+    }
+
+    async function acquireWakeLock() {
+      if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+      try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+    }
+
+    async function enterFullscreen() {
+      document.body.classList.add('focus-mode');
+      try { await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
+      try { await screen.orientation.lock('landscape'); } catch {}
+      await acquireWakeLock();
+      fullscreenBtn.textContent = 'Zavřít';
+    }
+
+    async function exitFullscreen() {
+      if (wakeLock) { try { await wakeLock.release(); } catch {} wakeLock = null; }
+      document.body.classList.remove('focus-mode');
+      try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+      try { screen.orientation.unlock(); } catch {}
+      fullscreenBtn.textContent = 'Fullscreen';
+    }
+
+    function showChrome() {
+      if (isEmbed || document.body.classList.contains('focus-mode')) return;
+      topbar.classList.remove('chrome-hidden');
+      clearTimeout(chromeTimer);
+      chromeTimer = setTimeout(() => topbar.classList.add('chrome-hidden'), 2200);
+    }
+
+    buildTicks(clockTicks);
+    buildTicks(rClockTicks);
+
+    if (isEmbed) {
+      fullscreenBtn.hidden = true;
+    } else {
+      fullscreenBtn.addEventListener('click', () => {
+        document.fullscreenElement || document.body.classList.contains('focus-mode') ? exitFullscreen() : enterFullscreen();
+      });
+      document.addEventListener('fullscreenchange', () => {
+        const active = Boolean(document.fullscreenElement);
+        if (!active && !document.body.classList.contains('focus-mode')) fullscreenBtn.textContent = 'Fullscreen';
+        else fullscreenBtn.textContent = 'Zavřít';
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && (document.fullscreenElement || document.body.classList.contains('focus-mode'))) acquireWakeLock();
+      });
+      ['mousemove', 'touchstart', 'keydown'].forEach((evt) => document.addEventListener(evt, showChrome, { passive: true }));
+      showChrome();
+    }
+
+    const es = new EventSource('/events');
+    es.onmessage = (e) => render(JSON.parse(e.data));
+    es.onerror = () => setTimeout(() => location.reload(), 4000);
+
+    fetch('/api/state', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then(render)
+      .catch(() => {});
+  </script>
+</body>
+</html>

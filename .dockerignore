@@ -1,0 +1,7 @@
+*.csv
+*.command
+*.log
+.DS_Store
+README.md
+node_modules
+.claude

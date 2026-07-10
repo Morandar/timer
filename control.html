@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>O2 Stánek – Control v2</title>
+  <style>
+    :root {
+      --ink-950: #050b16;
+      --ink-900: #09111f;
+      --ink-850: #101a2b;
+      --ink-800: #152238;
+      --ink-700: #22314d;
+      --line: rgba(163, 185, 228, 0.18);
+      --line-strong: rgba(163, 185, 228, 0.32);
+      --text: #f4f8ff;
+      --muted: #9aa7c2;
+      --muted-strong: #c7d1e5;
+      --blue: #1f59ff;
+      --blue-soft: #6de5ff;
+      --cyan: #7ce8ff;
+      --emerald: #4de2b1;
+      --danger: #ff6c87;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --font-ui: "Avenir Next", "Segoe UI", sans-serif;
+      --font-display: "DIN Alternate", "Avenir Next Condensed", "Helvetica Neue", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      min-height: 100%;
+      font-family: var(--font-ui);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(39, 94, 255, 0.25), transparent 34%),
+        radial-gradient(circle at 90% 12%, rgba(109, 229, 255, 0.16), transparent 22%),
+        linear-gradient(180deg, #06101c 0%, #040810 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
+      opacity: 0.22;
+    }
+
+    body {
+      padding: 22px;
+    }
+
+    .shell {
+      max-width: 1680px;
+      margin: 0 auto;
+      animation: rise-in 420ms ease;
+    }
+
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 0 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: clamp(132px, 14vw, 188px);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 14px 32px rgba(0, 0, 0, 0.28));
+    }
+
+    .brand-copy { min-width: 0; }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--blue-soft);
+      margin-bottom: 6px;
+    }
+
+    .brand h1 {
+      font-size: clamp(1.7rem, 2.8vw, 2.6rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .brand p {
+      color: var(--muted);
+      max-width: 58ch;
+      line-height: 1.5;
+      font-size: 0.98rem;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-chip,
+    .action-btn,
+    .mini-chip,
+    .scene-code,
+    .template-badge,
+    .quick-chip,
+    .ghost-chip {
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
+    .status-chip {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+      color: var(--muted-strong);
+      font-size: 0.84rem;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 0 rgba(255, 108, 135, 0.3);
+    }
+
+    .status-dot.online {
+      background: var(--emerald);
+      box-shadow: 0 0 0 8px rgba(77, 226, 177, 0.08);
+    }
+
+    .action-btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      text-decoration: none;
+      cursor: pointer;
+      padding: 12px 16px;
+      font: inherit;
+      font-size: 0.88rem;
+      font-weight: 700;
+      transition: transform 130ms ease, border-color 130ms ease, background 130ms ease;
+    }
+
+    .action-btn:hover,
+    .quick-chip:hover,
+    .ghost-chip:hover,
+    .template-action:hover,
+    .scene-card:hover,
+    .seg-btn:hover,
+    .toggle-row:hover {
+      transform: translateY(-1px);
+      border-color: var(--line-strong);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--blue) 0%, #0a35ba 100%);
+      border-color: rgba(109,229,255,0.35);
+      box-shadow: 0 16px 40px rgba(31, 89, 255, 0.28);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .panel {
+      position: relative;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent 24%);
+      opacity: 0.5;
+    }
+
+    .panel-head,
+    .panel-body {
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 22px 24px 0;
+    }
+
+    .panel-kicker {
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--blue-soft);
+      margin-bottom: 8px;
+    }
+
+    .panel-title {
+      font-size: 1.15rem;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.92rem;
+      max-width: 58ch;
+    }
+
+    .panel-body {
+      padding: 24px;
+    }
+
+    .scene-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .scene-card {
+      appearance: none;
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      padding: 16px 16px 16px 18px;
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+    }
+
+    .scene-card.active {
+      background:
+        linear-gradient(135deg, rgba(31,89,255,0.24), rgba(109,229,255,0.10));
+      border-color: rgba(109,229,255,0.34);
+      box-shadow: inset 0 0 0 1px rgba(109,229,255,0.18);
+    }
+
+    .scene-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .scene-code {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--line);
+      color: var(--blue-soft);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+    }
+
+    .scene-card.active .scene-code {
+      background: rgba(4, 12, 28, 0.42);
+      border-color: rgba(109,229,255,0.28);
+    }
+
+    .scene-state {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .scene-name {
+      font-size: 1rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .scene-desc {
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.86rem;
+    }
+
+    .editor-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 24px;
+    }
+
+    .editor-title-wrap { min-width: 0; }
+
+    .editor-scene-title {
+      font-size: clamp(1.55rem, 2.6vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      margin: 6px 0 8px;
+    }
+
+    .editor-scene-copy {
+      color: var(--muted);
+      max-width: 52ch;
+      line-height: 1.6;
+    }
+
+    .mini-chip {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted-strong);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 8px 8px 0;
+    }
+
+    .hero-stat {
+      min-width: 200px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(4, 9, 20, 0.52);
+    }
+
+    .hero-stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .hero-stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      font-family: var(--font-display);
+      margin-bottom: 8px;
+    }
+
+    .hero-stat-note {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .scene-editor { display: none; }
+    .scene-editor.visible { display: block; animation: rise-in 220ms ease; }
+
+    .editor-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .cluster {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted-strong);
+      margin-bottom: 10px;
+    }
+
+    .field-note {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+      margin-top: 8px;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="tel"],
+    input[type="time"],
+    textarea {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(3, 8, 20, 0.6);
+      color: var(--text);
+      border-radius: 18px;
+      padding: 16px 18px;
+      font: inherit;
+      font-size: 1rem;
+      transition: border-color 130ms ease, box-shadow 130ms ease, transform 130ms ease;
+    }
+
+    textarea {
+      min-height: 168px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(109,229,255,0.48);
+      box-shadow: 0 0 0 4px rgba(109,229,255,0.10);
+    }
+
+    .timer-composer,
+    .return-composer {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .quick-row,
+    .toolbar-row,
+    .info-row,
+    .template-toolbar,
+    .connection-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .quick-chip,
+    .ghost-chip,
+    .seg-btn,
+    .template-action,
+    .save-btn,
+    .copy-btn,
+    .launch-btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      transition: transform 130ms ease, border-color 130ms ease, background 130ms ease, opacity 130ms ease;
+    }
+
+    .quick-chip,
+    .ghost-chip,
+    .template-action,
+    .copy-btn,
+    .launch-btn {
+      padding: 11px 14px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .quick-chip {
+      background: rgba(109,229,255,0.10);
+      color: var(--blue-soft);
+      border-color: rgba(109,229,255,0.18);
+    }
+
+    .ghost-chip {
+      color: var(--muted-strong);
+    }
+
+    .launch-btn.primary,
+    .save-btn.primary,
+    .template-action.primary,
+    .copy-btn.primary {
+      background: linear-gradient(135deg, var(--blue) 0%, #0f37bc 100%);
+      border-color: rgba(109,229,255,0.30);
+      box-shadow: 0 16px 40px rgba(31, 89, 255, 0.22);
+    }
+
+    .launch-btn.secondary,
+    .save-btn.secondary {
+      background: rgba(109,229,255,0.10);
+      color: #081321;
+      border-color: rgba(109,229,255,0.28);
+      background-image: linear-gradient(135deg, #79eaff 0%, #4ad8ff 100%);
+    }
+
+    .launch-btn.danger,
+    .template-action.danger {
+      border-color: rgba(255,108,135,0.30);
+      color: #ffd4dd;
+      background: rgba(255,108,135,0.10);
+    }
+
+    .launch-btn,
+    .save-btn {
+      padding: 14px 18px;
+      border-radius: 18px;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .seg-group {
+      display: inline-grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 5px;
+      gap: 6px;
+    }
+
+    .seg-btn {
+      border-radius: 13px;
+      padding: 12px 16px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      min-width: 130px;
+    }
+
+    .seg-btn.active {
+      background: rgba(109,229,255,0.14);
+      color: var(--blue-soft);
+      border-color: rgba(109,229,255,0.28);
+    }
+
+    .toggle-block {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 130ms ease;
+    }
+
+    .toggle-copy-title {
+      font-size: 1rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .toggle-copy-desc {
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.86rem;
+    }
+
+    .toggle {
+      position: relative;
+      width: 56px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+    }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: background 180ms ease, border-color 180ms ease;
+      cursor: pointer;
+    }
+
+    .toggle-track::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+      transition: transform 180ms ease;
+    }
+
+    .toggle input:checked + .toggle-track {
+      background: linear-gradient(135deg, var(--blue) 0%, #24bde4 100%);
+      border-color: rgba(109,229,255,0.3);
+    }
+
+    .toggle input:checked + .toggle-track::after {
+      transform: translateX(24px);
+    }
+
+    .collapsible {
+      overflow: hidden;
+      transition: max-height 220ms ease, opacity 180ms ease, padding 180ms ease;
+    }
+
+    .collapsible-body {
+      padding: 0 18px 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .collapsible.collapsed {
+      max-height: 0 !important;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .collapsible:not(.collapsed) {
+      opacity: 1;
+    }
+
+    .subtle-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted-strong);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .subtle-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .subtle-dot.running { background: var(--emerald); box-shadow: 0 0 0 8px rgba(77,226,177,0.08); }
+    .subtle-dot.finished { background: var(--blue-soft); box-shadow: 0 0 0 8px rgba(109,229,255,0.08); }
+
+    .simple-scene {
+      border: 1px dashed rgba(109,229,255,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border-radius: 24px;
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .simple-scene h3 {
+      font-size: 1.28rem;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+    }
+
+    .simple-scene p {
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 52ch;
+    }
+
+    .preview-stage {
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(2,7,18,0.96), rgba(6,12,24,0.92));
+      border: 1px solid rgba(109,229,255,0.12);
+    }
+
+    .preview-device {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #030710;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.40);
+    }
+
+    .preview-device::before {
+      content: "LIVE PREVIEW";
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      z-index: 2;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.42);
+      pointer-events: none;
+    }
+
+    .preview-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #050b16;
+    }
+
+    .session-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .session-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.04);
+      padding: 16px 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .session-stat-label {
+      font-size: 0.74rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .session-stat-value {
+      font-size: 1.2rem;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .session-mono {
+      font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      font-size: 0.86rem;
+      color: var(--blue-soft);
+      line-height: 1.6;
+      word-break: break-all;
+    }
+
+    .qr-wrap {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .qr-wrap img {
+      width: 180px;
+      height: 180px;
+      padding: 10px;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+    }
+
+    .qr-note,
+    .net-info,
+    .template-empty,
+    .preset-note {
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.55;
+      font-size: 0.88rem;
+    }
+
+    .save-wrap {
+      display: grid;
+      gap: 12px;
+    }
+
+    .template-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .template-card {
+      padding: 16px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      display: grid;
+      gap: 12px;
+    }
+
+    .template-name {
+      font-size: 1rem;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+    }
+
+    .template-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .template-badge {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.05);
+      color: var(--muted-strong);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .template-badge.primary {
+      color: var(--blue-soft);
+      border-color: rgba(109,229,255,0.24);
+      background: rgba(109,229,255,0.10);
+    }
+
+    .template-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .template-action {
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .template-action.primary { color: white; }
+
+    .save-btn {
+      width: 100%;
+    }
+
+    .save-message {
+      min-height: 1.2em;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .stack-note {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.88rem;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1380px) {
+      .workspace {
+        grid-template-columns: 300px minmax(0, 1fr);
+      }
+
+      .right-column {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+        gap: 18px;
+      }
+
+      .right-column .panel:last-child {
+        grid-column: 2;
+      }
+    }
+
+    @media (max-width: 1080px) {
+      body { padding: 16px; }
+      .workspace,
+      .right-column {
+        grid-template-columns: 1fr;
+      }
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .topbar-actions {
+        justify-content: flex-start;
+      }
+      .editor-hero,
+      .timer-composer,
+      .return-composer {
+        grid-template-columns: 1fr;
+      }
+      .hero-stat { min-width: 0; }
+    }
+
+    @media (max-width: 720px) {
+      .panel-head,
+      .panel-body { padding-left: 18px; padding-right: 18px; }
+      .panel-body { padding-top: 18px; padding-bottom: 18px; }
+      .panel-head { padding-top: 18px; }
+      .brand { align-items: flex-start; }
+      .brand-logo { width: 132px; }
+      .scene-list { gap: 8px; }
+      .scene-card { padding: 14px; }
+      .quick-row,
+      .toolbar-row,
+      .connection-actions,
+      .template-actions,
+      .info-row { gap: 8px; }
+      .action-btn,
+      .quick-chip,
+      .ghost-chip,
+      .template-action,
+      .copy-btn,
+      .launch-btn { width: 100%; justify-content: center; }
+      .seg-group { width: 100%; }
+      .seg-btn { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/assets/o2-guru-logo.svg" alt="O2 Guru" />
+        <div class="brand-copy">
+          <div class="eyebrow">Display Console</div>
+          <h1>Stánek Control</h1>
+          <p>Jedno místo pro řízení scén, doplňků a presetů. Ovládání je přestavěné tak, aby bylo rychlé při akci a čitelné i pod tlakem.</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div id="connectionStatus" class="status-chip">
+          <span id="connectionDot" class="status-dot"></span>
+          <span id="connectionLabel">Čekám na display URL</span>
+        </div>
+        <a id="openDisplayBtn" class="action-btn primary" href="/display" target="_blank" rel="noreferrer">Otevřít display</a>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="column left-column">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Scény</div>
+              <div class="panel-title">Co se má právě zobrazovat</div>
+              <div class="panel-subtitle">Vybereš scénu, upravíš její parametry a změna se okamžitě propíše do všech připojených displayů.</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="scene-list" role="group" aria-label="Výběr scén">
+              <button class="scene-card active" data-mode="timer">
+                <div class="scene-card-head">
+                  <span class="scene-code">TMR</span>
+                  <span class="scene-state">aktivní časovač</span>
+                </div>
+                <div class="scene-name">Odpočet</div>
+                <div class="scene-desc">Velký countdown pro přestávky, bloky a časově řízené vstupy.</div>
+              </button>
+              <button class="scene-card" data-mode="return">
+                <div class="scene-card-head">
+                  <span class="scene-code">RET</span>
+                  <span class="scene-state">pevný návrat</span>
+                </div>
+                <div class="scene-name">Vrátím se</div>
+                <div class="scene-desc">Zobrazí přesný čas návratu bez rizika špatného relativního odpočtu.</div>
+              </button>
+              <button class="scene-card" data-mode="clock">
+                <div class="scene-card-head">
+                  <span class="scene-code">CLK</span>
+                  <span class="scene-state">živý čas</span>
+                </div>
+                <div class="scene-name">Hodiny</div>
+                <div class="scene-desc">Digitální nebo analogové hodiny pro klidový režim stánku.</div>
+              </button>
+              <button class="scene-card" data-mode="pause">
+                <div class="scene-card-head">
+                  <span class="scene-code">PAU</span>
+                  <span class="scene-state">pauza</span>
+                </div>
+                <div class="scene-name">Pauza</div>
+                <div class="scene-desc">Jednoduchá scéna pro krátké technické přerušení.</div>
+              </button>
+              <button class="scene-card" data-mode="text">
+                <div class="scene-card-head">
+                  <span class="scene-code">MSG</span>
+                  <span class="scene-state">volná zpráva</span>
+                </div>
+                <div class="scene-name">Text</div>
+                <div class="scene-desc">Krátké sdělení, uvítání nebo rychlá informace pro zákazníka.</div>
+              </button>
+              <button class="scene-card" data-mode="logo">
+                <div class="scene-card-head">
+                  <span class="scene-code">IDL</span>
+                  <span class="scene-state">idle režim</span>
+                </div>
+                <div class="scene-name">Idle / Logo</div>
+                <div class="scene-desc">Ambientní scénář, když nic neběží a chceš držet brand v pohybu.</div>
+              </button>
+              <button class="scene-card" data-mode="blank">
+                <div class="scene-card-head">
+                  <span class="scene-code">BLK</span>
+                  <span class="scene-state">černá plocha</span>
+                </div>
+                <div class="scene-name">Prázdná</div>
+                <div class="scene-desc">Čistá černá obrazovka bez rušivých prvků.</div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Doplňky</div>
+              <div class="panel-title">Vrstva pod hlavní scénou</div>
+              <div class="panel-subtitle">Podtitulek a kontakt fungují jako overlay. Můžeš je zapnout nezávisle na hlavním módu.</div>
+            </div>
+          </div>
+          <div class="panel-body cluster">
+            <div class="toggle-block">
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-copy-title">Podtitulek</div>
+                  <div class="toggle-copy-desc">Krátká pomocná věta pod hlavním obsahem. Hodí se pro omluvu, instrukci nebo CTA.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="subtitleToggle" />
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div id="subtitleCollapse" class="collapsible collapsed" style="max-height: 320px;">
+                <div class="collapsible-body">
+                  <div>
+                    <label class="field-label" for="subtitleInput">Text podtitulku</label>
+                    <input id="subtitleInput" type="text" maxlength="200" placeholder="Přijdu za chvíli, prosím vyčkejte." />
+                  </div>
+                  <div>
+                    <div class="field-label">Rychlý návrat s timerem</div>
+                    <div class="quick-row">
+                      <button class="quick-chip" data-return="5">+5 min</button>
+                      <button class="quick-chip" data-return="10">+10 min</button>
+                      <button class="quick-chip" data-return="15">+15 min</button>
+                      <button class="quick-chip" data-return="20">+20 min</button>
+                      <button class="quick-chip" data-return="30">+30 min</button>
+                      <button class="quick-chip" data-return="60">+60 min</button>
+                    </div>
+                    <div class="field-note">Tahle akce současně nastaví timer, zapne scénu Odpočet a vygeneruje text „Vrátím se v HH:MM“.</div>
+                  </div>
+                  <button id="applySubtitleBtn" class="launch-btn primary">Použít podtitulek</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="toggle-block">
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-copy-title">Kontakt</div>
+                  <div class="toggle-copy-desc">Spodní kontaktní pruh se jménem a telefonem, když má návštěvník dostat jasný fallback.</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="contactToggle" />
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div id="contactCollapse" class="collapsible collapsed" style="max-height: 360px;">
+                <div class="collapsible-body">
+                  <div>
+                    <label class="field-label" for="contactNameInput">Jméno</label>
+                    <input id="contactNameInput" type="text" maxlength="100" placeholder="Jan Novák" />
+                  </div>
+                  <div>
+                    <label class="field-label" for="contactPhoneInput">Telefon</label>
+                    <input id="contactPhoneInput" type="tel" maxlength="30" placeholder="+420 777 123 456" />
+                  </div>
+                  <button id="saveContactBtn" class="launch-btn primary">Uložit a zobrazit kontakt</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="column main-column">
+        <section class="panel">
+          <div class="panel-body">
+            <div class="editor-hero">
+              <div class="editor-title-wrap">
+                <div id="sceneCodeBadge" class="mini-chip">TMR</div>
+                <div id="sceneTitle" class="editor-scene-title">Odpočet</div>
+                <div id="sceneDescription" class="editor-scene-copy">Countdown pro blok, přestávku nebo řízený slot. Změny se propíšou okamžitě na display.</div>
+                <div class="info-row" style="margin-top:16px;">
+                  <span id="liveStateChip" class="mini-chip">Scéna připravena</span>
+                  <span id="overlayStateChip" class="mini-chip">Bez overlaye</span>
+                </div>
+              </div>
+              <div class="hero-stat">
+                <div class="hero-stat-label">Aktuální stav</div>
+                <div id="heroStatValue" class="hero-stat-value">15:00</div>
+                <div id="heroStatNote" class="hero-stat-note">Nastavený čas pro další spuštění.</div>
+              </div>
+            </div>
+
+            <div id="timerCtrl" class="scene-editor visible">
+              <div class="editor-grid">
+                <div class="cluster">
+                  <div>
+                    <label class="field-label" for="minutesInput">Délka odpočtu</label>
+                    <div class="timer-composer">
+                      <input id="minutesInput" type="number" min="0" max="999" value="15" inputmode="numeric" />
+                      <button id="setDurBtn" class="launch-btn primary">Použít délku</button>
+                    </div>
+                    <div class="field-note">Čas se interně drží v minutách a na displayi se renderuje jako `mm:ss`.</div>
+                  </div>
+                  <div>
+                    <div class="field-label">Rychlé délky</div>
+                    <div class="quick-row">
+                      <button class="quick-chip" data-mins="3">3 min</button>
+                      <button class="quick-chip" data-mins="5">5 min</button>
+                      <button class="quick-chip" data-mins="10">10 min</button>
+                      <button class="quick-chip" data-mins="15">15 min</button>
+                      <button class="quick-chip" data-mins="20">20 min</button>
+                      <button class="quick-chip" data-mins="30">30 min</button>
+                      <button class="quick-chip" data-mins="45">45 min</button>
+                      <button class="quick-chip" data-mins="60">60 min</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="field-label">Transport</div>
+                    <div class="toolbar-row">
+                      <button id="startPauseBtn" class="launch-btn secondary">Start</button>
+                      <button id="resetBtn" class="launch-btn">Reset</button>
+                      <div class="subtle-state">
+                        <span id="timerDot" class="subtle-dot"></span>
+                        <span id="timerStatusTxt">Nastaveno: 15:00</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="returnCtrl" class="scene-editor">
+              <div class="editor-grid">
+                <div class="cluster">
+                  <div>
+                    <label class="field-label" for="returnTimeInput">Čas návratu</label>
+                    <div class="return-composer">
+                      <input id="returnTimeInput" type="time" />
+                      <button id="applyReturnBtn" class="launch-btn primary">Publikovat návrat</button>
+                    </div>
+                    <div class="field-note">Display ukáže aktuální čas nahoře a pod ním pevný návratový čas bez relativního countdownu.</div>
+                  </div>
+                  <div>
+                    <div class="field-label">Přidat od teď</div>
+                    <div class="quick-row">
+                      <button class="quick-chip" data-add="5">+5 min</button>
+                      <button class="quick-chip" data-add="10">+10 min</button>
+                      <button class="quick-chip" data-add="15">+15 min</button>
+                      <button class="quick-chip" data-add="20">+20 min</button>
+                      <button class="quick-chip" data-add="30">+30 min</button>
+                      <button class="quick-chip" data-add="60">+60 min</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="clockCtrl" class="scene-editor">
+              <div class="editor-grid">
+                <div class="cluster">
+                  <div>
+                    <div class="field-label">Styl hodin</div>
+                    <div class="seg-group">
+                      <button class="seg-btn active" data-style="digital">Digitální</button>
+                      <button class="seg-btn" data-style="analog">Analogové</button>
+                    </div>
+                    <div class="field-note">Volba se promítá jak do hlavních hodin, tak do horní části scény „Vrátím se“.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="textCtrl" class="scene-editor">
+              <div class="editor-grid">
+                <div class="cluster">
+                  <div>
+                    <label class="field-label" for="mainTextInput">Zpráva pro display</label>
+                    <textarea id="mainTextInput" maxlength="300" placeholder="Vítejte na stánku O2\nZa chvíli jsme s vámi."></textarea>
+                    <div class="field-note">Text je vhodný pro uvítání, krátkou omluvu nebo jednoduchý call to action. Zachovává zalomení řádků.</div>
+                  </div>
+                  <button id="applyTextBtn" class="launch-btn primary">Publikovat zprávu</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="pauseCtrl" class="scene-editor">
+              <div class="simple-scene">
+                <h3>Technická pauza</h3>
+                <p>Tahle scéna je záměrně jednoduchá. Slouží jako čistý, výrazný stav bez další konfigurace. Pokud chceš přidat vysvětlení, zapni podtitulek nebo kontakt.</p>
+                <button class="launch-btn primary" data-mode="pause">Přepnout na Pauzu</button>
+              </div>
+            </div>
+
+            <div id="logoCtrl" class="scene-editor">
+              <div class="simple-scene">
+                <h3>Idle / logo režim</h3>
+                <p>Scéna pro chvíle, kdy nechceš nechat display mrtvý, ale zároveň na něm nemá běžet aktivní informace. Funguje jako ambientní screensaver.</p>
+                <button class="launch-btn primary" data-mode="logo">Spustit idle scénu</button>
+              </div>
+            </div>
+
+            <div id="blankCtrl" class="scene-editor">
+              <div class="simple-scene">
+                <h3>Prázdná obrazovka</h3>
+                <p>Kompletně černý výstup bez dalších vrstev. Hodí se, když je potřeba display opticky umlčet nebo přepnout na jiný externí zdroj.</p>
+                <button class="launch-btn primary" data-mode="blank">Přepnout na prázdnou plochu</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="column right-column">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Preview</div>
+              <div class="panel-title">Živý náhled displaye</div>
+              <div class="panel-subtitle">Náhled běží na stejné render logice jako skutečný display. Uvidíš tedy reálný výstup, ne jen maketu.</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="preview-stage">
+              <div class="preview-device">
+                <iframe id="previewFrame" class="preview-frame" src="/display?embed=1" title="Živý náhled displaye"></iframe>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="right-column">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-kicker">Session</div>
+                <div class="panel-title">Připojení a sdílení</div>
+                <div class="panel-subtitle">Z jednoho místa otevřeš display na jiném zařízení, zkopíruješ URL a zobrazíš QR.</div>
+              </div>
+            </div>
+            <div class="panel-body session-grid">
+              <div class="session-card">
+                <div class="session-stat-label">Display URL</div>
+                <div id="displayUrlBox" class="session-mono">Načítám…</div>
+                <div class="connection-actions">
+                  <button id="copyUrlBtn" class="copy-btn primary">Kopírovat display</button>
+                  <button id="copyCtrlBtn" class="copy-btn">Kopírovat ovládání</button>
+                </div>
+              </div>
+
+              <div class="session-card">
+                <div class="session-stat-label">QR přístup</div>
+                <div class="qr-wrap">
+                  <img id="qrImg" alt="QR kód pro display" hidden />
+                  <div id="qrFallback" class="qr-note">Generuji QR…</div>
+                </div>
+              </div>
+
+              <div class="session-card">
+                <div class="session-stat-label">Síť</div>
+                <div id="netInfo" class="session-mono">—</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <div class="panel-kicker">Presety</div>
+                <div class="panel-title">Uložené konfigurace</div>
+                <div class="panel-subtitle">Preset ukládá aktuální scénu i overlay vrstvy, aby šlo celé nastavení vyvolat jedním klikem.</div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="save-wrap">
+                <div>
+                  <label class="field-label" for="tmplNameInput">Uložit aktuální preset</label>
+                  <input id="tmplNameInput" type="text" maxlength="80" placeholder="Např. Přestávka 15 min" />
+                </div>
+                <button id="saveTmplBtn" class="save-btn primary">Uložit preset</button>
+                <div id="saveTmplMsg" class="save-message"></div>
+                <div class="preset-note">Tip: ukládej celé pracovní scénáře. Například „Přijdu za 15 min + kontakt“ nebo „Čisté hodiny bez overlaye“.</div>
+                <div id="tmplList" class="template-list"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    let st = null;
+    let tmpls = [];
+
+    const SCENES = {
+      timer:  { code: 'TMR', title: 'Odpočet', desc: 'Countdown pro blok, přestávku nebo řízený slot. Změny se propíšou okamžitě na display.', state: (s) => s.running ? `Běží ${fmt(s.remainingSeconds)}` : s.finished ? 'Čas vypršel' : `Připraveno ${fmt(s.durationSeconds)}` },
+      return: { code: 'RET', title: 'Vrátím se', desc: 'Zobrazuje pevný návratový čas a nad ním živé hodiny. Bez relativního odpočtu do dalšího dne.', state: (s) => s.returnTime ? `Návrat ${s.returnTime}` : 'Čeká na čas návratu' },
+      clock:  { code: 'CLK', title: 'Hodiny', desc: 'Klidová scéna s živým časem. Hodí se mezi bloky nebo když display nechceš nechat prázdný.', state: (s) => s.clockStyle === 'analog' ? 'Analogové' : 'Digitální' },
+      pause:  { code: 'PAU', title: 'Pauza', desc: 'Jednoduchá a čitelná pauzová scéna bez další logiky.', state: () => 'Technická pauza' },
+      text:   { code: 'MSG', title: 'Text', desc: 'Volná zpráva přes celou plochu. Vhodné pro uvítání, omluvu nebo operativní instrukci.', state: (s) => s.mainText ? trimText(s.mainText, 40) : 'Bez zprávy' },
+      logo:   { code: 'IDL', title: 'Idle / Logo', desc: 'Ambientní brandová scéna, když nechceš aktivní informaci, ale ani mrtvou obrazovku.', state: () => 'Idle režim' },
+      blank:  { code: 'BLK', title: 'Prázdná', desc: 'Čistá černá plocha bez rušivých prvků.', state: () => 'Černá obrazovka' },
+    };
+
+    const MODE_BADGES = {
+      timer: 'Odpočet',
+      return: 'Vrátím se',
+      clock: 'Hodiny',
+      pause: 'Pauza',
+      text: 'Text',
+      logo: 'Idle',
+      blank: 'Prázdná',
+    };
+
+    const editors = {
+      timer: document.getElementById('timerCtrl'),
+      return: document.getElementById('returnCtrl'),
+      clock: document.getElementById('clockCtrl'),
+      pause: document.getElementById('pauseCtrl'),
+      text: document.getElementById('textCtrl'),
+      logo: document.getElementById('logoCtrl'),
+      blank: document.getElementById('blankCtrl'),
+    };
+
+    const modeBtns = document.querySelectorAll('.scene-card');
+    const sceneCodeBadge = document.getElementById('sceneCodeBadge');
+    const sceneTitle = document.getElementById('sceneTitle');
+    const sceneDescription = document.getElementById('sceneDescription');
+    const heroStatValue = document.getElementById('heroStatValue');
+    const heroStatNote = document.getElementById('heroStatNote');
+    const liveStateChip = document.getElementById('liveStateChip');
+    const overlayStateChip = document.getElementById('overlayStateChip');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const connectionDot = document.getElementById('connectionDot');
+    const connectionLabel = document.getElementById('connectionLabel');
+    const openDisplayBtn = document.getElementById('openDisplayBtn');
+
+    const minutesInput = document.getElementById('minutesInput');
+    const setDurBtn = document.getElementById('setDurBtn');
+    const startPauseBtn = document.getElementById('startPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const timerDot = document.getElementById('timerDot');
+    const timerStatusTxt = document.getElementById('timerStatusTxt');
+
+    const returnTimeInput = document.getElementById('returnTimeInput');
+    const applyReturnBtn = document.getElementById('applyReturnBtn');
+    const segBtns = document.querySelectorAll('.seg-btn');
+
+    const mainTextInput = document.getElementById('mainTextInput');
+    const applyTextBtn = document.getElementById('applyTextBtn');
+
+    const subtitleToggle = document.getElementById('subtitleToggle');
+    const subtitleCollapse = document.getElementById('subtitleCollapse');
+    const subtitleInput = document.getElementById('subtitleInput');
+    const applySubtitleBtn = document.getElementById('applySubtitleBtn');
+
+    const contactToggle = document.getElementById('contactToggle');
+    const contactCollapse = document.getElementById('contactCollapse');
+    const contactNameInput = document.getElementById('contactNameInput');
+    const contactPhoneInput = document.getElementById('contactPhoneInput');
+    const saveContactBtn = document.getElementById('saveContactBtn');
+
+    const tmplNameInput = document.getElementById('tmplNameInput');
+    const saveTmplBtn = document.getElementById('saveTmplBtn');
+    const saveTmplMsg = document.getElementById('saveTmplMsg');
+    const tmplList = document.getElementById('tmplList');
+
+    const displayUrlBox = document.getElementById('displayUrlBox');
+    const copyUrlBtn = document.getElementById('copyUrlBtn');
+    const copyCtrlBtn = document.getElementById('copyCtrlBtn');
+    const qrImg = document.getElementById('qrImg');
+    const qrFallback = document.getElementById('qrFallback');
+    const netInfo = document.getElementById('netInfo');
+
+    function fmt(seconds) {
+      const n = Math.max(0, Number(seconds) || 0);
+      return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    }
+
+    function trimText(text, max) {
+      const clean = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!clean) return 'Bez zprávy';
+      return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+    }
+
+    function nowPlusMins(minutes) {
+      const d = new Date(Date.now() + minutes * 60000);
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function setCollapse(el, open) {
+      el.classList.toggle('collapsed', !open);
+    }
+
+    async function send(type, extra = {}) {
+      const res = await fetch('/api/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, ...extra }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Akce selhala');
+      render(data);
+      return data;
+    }
+
+    function flashBtn(btn, text, ms = 1400) {
+      const original = btn.textContent;
+      btn.textContent = text;
+      setTimeout(() => { btn.textContent = original; }, ms);
+    }
+
+    function currentOverlayState(state) {
+      const active = [];
+      if (state.showSubtitle && state.subtitleText) active.push('Podtitulek');
+      if (state.showContact && (state.contactName || state.contactPhone)) active.push('Kontakt');
+      return active.length ? active.join(' + ') : 'Bez overlaye';
+    }
+
+    function renderEditorMeta(state) {
+      const scene = SCENES[state.mainMode] || SCENES.timer;
+      sceneCodeBadge.textContent = scene.code;
+      sceneTitle.textContent = scene.title;
+      sceneDescription.textContent = scene.desc;
+      liveStateChip.textContent = scene.state(state);
+      overlayStateChip.textContent = currentOverlayState(state);
+
+      switch (state.mainMode) {
+        case 'timer':
+          heroStatValue.textContent = state.running ? fmt(state.remainingSeconds) : fmt(state.durationSeconds);
+          heroStatNote.textContent = state.running ? 'Právě běžící čas na displayi.' : 'Nastavený čas pro další spuštění.';
+          break;
+        case 'return':
+          heroStatValue.textContent = state.returnTime || '—';
+          heroStatNote.textContent = 'Pevný čas návratu publikovaný na scéně.';
+          break;
+        case 'clock':
+          heroStatValue.textContent = state.clockStyle === 'analog' ? 'Analog' : 'Digital';
+          heroStatNote.textContent = 'Aktivní styl hodin pro hlavní scénu i návratový panel.';
+          break;
+        case 'text':
+          heroStatValue.textContent = trimText(state.mainText, 22);
+          heroStatNote.textContent = 'Krátký výřez aktuálně publikované zprávy.';
+          break;
+        case 'pause':
+          heroStatValue.textContent = 'PAUZA';
+          heroStatNote.textContent = 'Display zobrazuje čistý pauzový stav.';
+          break;
+        case 'logo':
+          heroStatValue.textContent = 'IDLE';
+          heroStatNote.textContent = 'Brandová klidová scéna bez textové informace.';
+          break;
+        case 'blank':
+          heroStatValue.textContent = 'BLACK';
+          heroStatNote.textContent = 'Display je ztlumený na černou plochu.';
+          break;
+        default:
+          heroStatValue.textContent = scene.title;
+          heroStatNote.textContent = scene.desc;
+      }
+    }
+
+    function renderTemplates() {
+      if (tmpls.length === 0) {
+        tmplList.innerHTML = '<div class="template-empty">Zatím nemáš uložený žádný preset. Nastav scénu, případné overlaye a ulož si ji pro další použití.</div>';
+        return;
+      }
+
+      tmplList.innerHTML = tmpls.map((t) => {
+        const badges = [];
+        badges.push(`<span class="template-badge primary">${MODE_BADGES[t.mainMode] || t.mainMode}</span>`);
+        if (t.mainMode === 'timer' && t.durationMinutes) badges.push(`<span class="template-badge">${t.durationMinutes} min</span>`);
+        if (t.showSubtitle && t.subtitleText) badges.push(`<span class="template-badge">${trimText(t.subtitleText, 20)}</span>`);
+        if (t.showContact && t.contactName) badges.push(`<span class="template-badge">Kontakt: ${trimText(t.contactName, 18)}</span>`);
+        return `
+          <article class="template-card">
+            <div class="template-name">${escHtml(t.name)}</div>
+            <div class="template-badges">${badges.join('')}</div>
+            <div class="template-actions">
+              <button class="template-action primary" onclick="activateTmpl('${t.id}', this)">Aktivovat</button>
+              <button class="template-action danger" onclick="deleteTmpl('${t.id}', this)">Smazat</button>
+            </div>
+          </article>`;
+      }).join('');
+    }
+
+    function escHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function loadTemplates() {
+      try {
+        const res = await fetch('/api/templates', { cache: 'no-store' });
+        tmpls = await res.json();
+        renderTemplates();
+      } catch {
+        tmplList.innerHTML = '<div class="template-empty">Nepodařilo se načíst presety.</div>';
+      }
+    }
+
+    window.activateTmpl = async function(id, btn) {
+      const original = btn.textContent;
+      btn.textContent = 'Aktivuji…';
+      try {
+        await send('activate-template', { id });
+        btn.textContent = 'Aktivováno';
+        setTimeout(() => { btn.textContent = original; }, 1400);
+      } catch {
+        btn.textContent = original;
+      }
+    };
+
+    window.deleteTmpl = async function(id, btn) {
+      const original = btn.textContent;
+      btn.textContent = 'Mažu…';
+      try {
+        await send('delete-template', { id });
+        await loadTemplates();
+      } catch {
+        btn.textContent = original;
+      }
+    };
+
+    function renderConnection(state) {
+      const dUrl = state.displayUrl;
+      const cUrl = state.controlUrl || state.localhostControlUrl || location.href;
+      const online = Boolean(dUrl);
+
+      connectionDot.classList.toggle('online', online);
+      connectionLabel.textContent = online ? 'Display je sdílitelný přes URL / QR' : 'Běží jen lokálně';
+      displayUrlBox.textContent = dUrl || 'Připoj zařízení ke stejné síti nebo použij veřejný deploy.';
+      openDisplayBtn.href = dUrl || '/display';
+
+      if (dUrl) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(dUrl)}`;
+        qrImg.hidden = false;
+        qrFallback.textContent = 'Naskenuj QR pro otevření displaye.';
+      } else {
+        qrImg.hidden = true;
+        qrFallback.textContent = 'QR se zobrazí, jakmile bude dostupná display URL.';
+      }
+
+      netInfo.textContent = (state.networkAddresses || []).length
+        ? state.networkAddresses.map((a) => `${a.name}: ${a.address}`).join('  ·  ')
+        : 'Síťové rozhraní není dostupné.';
+
+      copyUrlBtn.onclick = async () => {
+        if (!dUrl) return;
+        try { await navigator.clipboard.writeText(dUrl); flashBtn(copyUrlBtn, 'Zkopírováno'); }
+        catch { flashBtn(copyUrlBtn, 'Chyba'); }
+      };
+
+      copyCtrlBtn.onclick = async () => {
+        try { await navigator.clipboard.writeText(cUrl); flashBtn(copyCtrlBtn, 'Zkopírováno'); }
+        catch { flashBtn(copyCtrlBtn, 'Chyba'); }
+      };
+    }
+
+    function render(state) {
+      st = state;
+
+      modeBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.mode === state.mainMode));
+      Object.entries(editors).forEach(([mode, el]) => el.classList.toggle('visible', mode === state.mainMode));
+
+      renderEditorMeta(state);
+
+      if (document.activeElement !== minutesInput) minutesInput.value = String(Math.floor(state.durationSeconds / 60));
+      startPauseBtn.textContent = state.running ? 'Pauza' : 'Start';
+      startPauseBtn.className = state.running ? 'launch-btn primary' : 'launch-btn secondary';
+      timerDot.className = `subtle-dot${state.running ? ' running' : state.finished ? ' finished' : ''}`;
+      timerStatusTxt.textContent = state.running
+        ? `Zbývá ${fmt(state.remainingSeconds)}`
+        : state.finished ? 'Čas vypršel' : `Nastaveno: ${fmt(state.durationSeconds)}`;
+
+      if (document.activeElement !== returnTimeInput) returnTimeInput.value = state.returnTime || '';
+      segBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.style === (state.clockStyle || 'digital')));
+      if (document.activeElement !== mainTextInput) mainTextInput.value = state.mainText || '';
+
+      if (document.activeElement !== subtitleToggle) {
+        subtitleToggle.checked = state.showSubtitle;
+        setCollapse(subtitleCollapse, state.showSubtitle);
+      }
+      if (document.activeElement !== subtitleInput) subtitleInput.value = state.subtitleText || '';
+
+      if (document.activeElement !== contactToggle) {
+        contactToggle.checked = state.showContact;
+        setCollapse(contactCollapse, state.showContact);
+      }
+      if (document.activeElement !== contactNameInput) contactNameInput.value = state.contactName || '';
+      if (document.activeElement !== contactPhoneInput) contactPhoneInput.value = state.contactPhone || '';
+
+      renderConnection(state);
+    }
+
+    modeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => send('set-main-mode', { mode: btn.dataset.mode }).catch(() => {}));
+    });
+
+    document.querySelectorAll('.launch-btn[data-mode]').forEach((btn) => {
+      btn.addEventListener('click', () => send('set-main-mode', { mode: btn.dataset.mode }).catch(() => {}));
+    });
+
+    setDurBtn.addEventListener('click', () => send('set-duration', { minutes: minutesInput.value }).catch(() => {}));
+    minutesInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') send('set-duration', { minutes: minutesInput.value }).catch(() => {});
+    });
+
+    document.querySelectorAll('[data-mins]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        minutesInput.value = btn.dataset.mins;
+        send('set-duration', { minutes: btn.dataset.mins }).catch(() => {});
+      });
+    });
+
+    startPauseBtn.addEventListener('click', () => send('start-pause').catch(() => {}));
+    resetBtn.addEventListener('click', () => send('reset').catch(() => {}));
+
+    document.querySelectorAll('[data-add]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        returnTimeInput.value = nowPlusMins(Number(btn.dataset.add));
+      });
+    });
+
+    applyReturnBtn.addEventListener('click', async () => {
+      const value = returnTimeInput.value;
+      if (!value) { returnTimeInput.focus(); return; }
+      await send('set-return-time', { time: value }).catch(() => {});
+      if (st?.mainMode !== 'return') await send('set-main-mode', { mode: 'return' }).catch(() => {});
+    });
+
+    segBtns.forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        await send('set-clock-style', { style: btn.dataset.style }).catch(() => {});
+        if (st?.mainMode !== 'clock') await send('set-main-mode', { mode: 'clock' }).catch(() => {});
+      });
+    });
+
+    applyTextBtn.addEventListener('click', async () => {
+      await send('set-main-text', { text: mainTextInput.value }).catch(() => {});
+      if (st?.mainMode !== 'text') await send('set-main-mode', { mode: 'text' }).catch(() => {});
+    });
+
+    subtitleToggle.addEventListener('change', () => {
+      const on = subtitleToggle.checked;
+      setCollapse(subtitleCollapse, on);
+      send('set-subtitle', { show: on, text: subtitleInput.value }).catch(() => {});
+    });
+
+    applySubtitleBtn.addEventListener('click', () => {
+      send('set-subtitle', { show: true, text: subtitleInput.value }).catch(() => {});
+    });
+
+    document.querySelectorAll('[data-return]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const mins = Number(btn.dataset.return);
+        const text = `Vrátím se v ${nowPlusMins(mins)}`;
+        subtitleInput.value = text;
+        subtitleToggle.checked = true;
+        setCollapse(subtitleCollapse, true);
+        await send('set-duration', { minutes: mins }).catch(() => {});
+        await send('set-main-mode', { mode: 'timer' }).catch(() => {});
+        await send('start-pause').catch(() => {});
+        await send('set-subtitle', { show: true, text }).catch(() => {});
+      });
+    });
+
+    contactToggle.addEventListener('change', () => {
+      const on = contactToggle.checked;
+      setCollapse(contactCollapse, on);
+      send('set-contact', { show: on }).catch(() => {});
+    });
+
+    saveContactBtn.addEventListener('click', () => {
+      send('set-contact', { show: true, name: contactNameInput.value, phone: contactPhoneInput.value }).catch(() => {});
+      contactToggle.checked = true;
+      setCollapse(contactCollapse, true);
+    });
+
+    saveTmplBtn.addEventListener('click', async () => {
+      const name = tmplNameInput.value.trim();
+      if (!name) { tmplNameInput.focus(); return; }
+      saveTmplBtn.textContent = 'Ukládám…';
+      try {
+        await send('save-template', { name });
+        tmplNameInput.value = '';
+        saveTmplMsg.textContent = `Preset „${name}" uložen.`;
+        saveTmplMsg.style.color = 'var(--blue-soft)';
+        saveTmplBtn.textContent = 'Uložit preset';
+        await loadTemplates();
+        setTimeout(() => { saveTmplMsg.textContent = ''; }, 2500);
+      } catch (err) {
+        saveTmplMsg.textContent = err.message;
+        saveTmplMsg.style.color = 'var(--danger)';
+        saveTmplBtn.textContent = 'Uložit preset';
+      }
+    });
+
+    tmplNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveTmplBtn.click();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.key === ' ') { e.preventDefault(); send('start-pause').catch(() => {}); }
+      if (e.key.toLowerCase() === 'r') send('reset').catch(() => {});
+    });
+
+    const es = new EventSource('/events');
+    es.onmessage = (e) => render(JSON.parse(e.data));
+    es.onerror = () => setTimeout(() => location.reload(), 4000);
+
+    fetch('/api/state', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then(render)
+      .catch(() => {});
+
+    loadTemplates();
+  </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+.DS_Store
+.alza-timer.log
+.claude/
+node_modules/
+state.json
+templates.json
+*.csv
