@@ -414,6 +414,7 @@
       display: grid;
       place-items: center;
       overflow: hidden;
+      contain: layout paint;
     }
 
     /* The DVD animation uses the whole available display canvas. */
@@ -475,6 +476,7 @@
     .idle-stage.motion-dvd .idle-logo-wrap {
       top: 0;
       left: 0;
+      animation: dvd-x var(--dvd-x-duration) linear var(--dvd-x-delay) infinite alternate;
     }
 
     .idle-logo {
@@ -484,6 +486,31 @@
       filter:
         drop-shadow(0 30px 80px rgba(0, 0, 0, 0.34))
         drop-shadow(0 0 40px rgba(31, 89, 255, 0.18));
+    }
+
+    /* Keep the DVD path on the compositor even on lower-powered display devices. */
+    .idle-stage.motion-dvd::before,
+    .idle-stage.motion-dvd::after {
+      animation: none;
+      filter: none;
+      opacity: 0.28;
+    }
+
+    .idle-stage.motion-dvd .idle-logo {
+      animation: dvd-y var(--dvd-y-duration) linear var(--dvd-y-delay) infinite alternate;
+      filter: none;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+
+    @keyframes dvd-x {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(var(--dvd-max-x), 0, 0); }
+    }
+
+    @keyframes dvd-y {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(0, var(--dvd-max-y), 0); }
     }
 
     .idle-stage.motion-float .idle-logo-wrap,
@@ -772,12 +799,9 @@
     let clockTickId = null;
     let wakeLock = null;
     let chromeTimer = null;
-    let logoFrameId = null;
-    let logoStartFrameId = null;
-    let logoLastTick = null;
+    let logoLayoutFrameId = null;
     let logoMotionSignature = '';
     let latestState = null;
-    let logoPosition = { x: 0, y: 0, vx: 48, vy: 34 };
     let logoBounds = { maxX: 0, maxY: 0 };
 
     function fmt(seconds) {
@@ -880,11 +904,8 @@
     }
 
     function stopLogoMotion() {
-      if (logoStartFrameId) cancelAnimationFrame(logoStartFrameId);
-      if (logoFrameId) cancelAnimationFrame(logoFrameId);
-      logoStartFrameId = null;
-      logoFrameId = null;
-      logoLastTick = null;
+      if (logoLayoutFrameId) cancelAnimationFrame(logoLayoutFrameId);
+      logoLayoutFrameId = null;
     }
 
     function setLogoWidth(scale) {
@@ -896,7 +917,7 @@
       idleLogoWrap.style.width = `${Math.round(width)}px`;
     }
 
-    function updateDvdBounds(centerLogo = false) {
+    function updateDvdBounds() {
       const stageWidth = idleStage.clientWidth;
       const stageHeight = idleStage.clientHeight;
       const logoWidth = idleLogoWrap.offsetWidth;
@@ -904,58 +925,19 @@
 
       logoBounds.maxX = Math.max(0, stageWidth - logoWidth);
       logoBounds.maxY = Math.max(0, stageHeight - logoHeight);
-
-      if (centerLogo) {
-        logoPosition.x = logoBounds.maxX / 2;
-        logoPosition.y = logoBounds.maxY / 2;
-      } else {
-        logoPosition.x = Math.max(0, Math.min(logoBounds.maxX, logoPosition.x));
-        logoPosition.y = Math.max(0, Math.min(logoBounds.maxY, logoPosition.y));
-      }
     }
 
-    function advanceDvdAxis(position, velocity, limit, elapsed) {
-      if (limit <= 0) return { position: 0, velocity };
+    function configureDvdMotion() {
+      updateDvdBounds();
 
-      let nextPosition = position + velocity * elapsed;
-      let nextVelocity = velocity;
-
-      while (nextPosition < 0 || nextPosition > limit) {
-        if (nextPosition < 0) {
-          nextPosition = -nextPosition;
-          nextVelocity = Math.abs(nextVelocity);
-        } else {
-          nextPosition = 2 * limit - nextPosition;
-          nextVelocity = -Math.abs(nextVelocity);
-        }
-      }
-
-      return { position: nextPosition, velocity: nextVelocity };
-    }
-
-    function startDvdMotion() {
-      stopLogoMotion();
-      updateDvdBounds(true);
-
-      const frame = (timestamp) => {
-        if (!logoLastTick) {
-          logoLastTick = timestamp;
-        }
-
-        const elapsed = Math.min((timestamp - logoLastTick) / 1000, 0.1);
-        logoLastTick = timestamp;
-        const horizontal = advanceDvdAxis(logoPosition.x, logoPosition.vx, logoBounds.maxX, elapsed);
-        const vertical = advanceDvdAxis(logoPosition.y, logoPosition.vy, logoBounds.maxY, elapsed);
-        logoPosition.x = horizontal.position;
-        logoPosition.vx = horizontal.velocity;
-        logoPosition.y = vertical.position;
-        logoPosition.vy = vertical.velocity;
-
-        idleLogoWrap.style.transform = `translate3d(${logoPosition.x}px, ${logoPosition.y}px, 0)`;
-        logoFrameId = requestAnimationFrame(frame);
-      };
-
-      logoFrameId = requestAnimationFrame(frame);
+      const xDuration = Math.max(1, logoBounds.maxX / 48);
+      const yDuration = Math.max(1, logoBounds.maxY / 34);
+      idleStage.style.setProperty('--dvd-max-x', `${logoBounds.maxX}px`);
+      idleStage.style.setProperty('--dvd-max-y', `${logoBounds.maxY}px`);
+      idleStage.style.setProperty('--dvd-x-duration', `${xDuration}s`);
+      idleStage.style.setProperty('--dvd-y-duration', `${yDuration}s`);
+      idleStage.style.setProperty('--dvd-x-delay', `${-xDuration / 2}s`);
+      idleStage.style.setProperty('--dvd-y-delay', `${-yDuration / 2}s`);
     }
 
     function renderLogo(state) {
@@ -971,12 +953,10 @@
       setLogoWidth(scale);
 
       if (state.mainMode === 'logo' && motion === 'dvd') {
-        logoStartFrameId = requestAnimationFrame(() => {
-          logoStartFrameId = null;
-          if (latestState?.mainMode === 'logo' && latestState.logoMotion === 'dvd') startDvdMotion();
+        logoLayoutFrameId = requestAnimationFrame(() => {
+          logoLayoutFrameId = null;
+          if (latestState?.mainMode === 'logo' && latestState.logoMotion === 'dvd') configureDvdMotion();
         });
-      } else {
-        idleLogoWrap.style.transform = '';
       }
     }
 
