@@ -23,6 +23,7 @@ const CONTENT_TYPES = {
 const VALID_MAIN_MODES = ['timer', 'return', 'clock', 'pause', 'text', 'logo', 'blank'];
 const VALID_CLOCK_STYLES = ['digital', 'analog'];
 const VALID_LOGO_MOTIONS = ['dvd', 'float', 'static'];
+const VALID_DISPLAY_FONTS = ['din', 'avenir', 'mono', 'serif'];
 // Na Fly.io se templates ukládají na volume /data, lokálně vedle server.js
 const DATA_DIR = process.env.DATA_DIR || ROOT;
 const TEMPLATES_FILE = path.join(DATA_DIR, 'templates.json');
@@ -38,6 +39,8 @@ const DEFAULT_STATE = {
   mainText: '',
   returnTime: '',
   clockStyle: 'digital',
+  displayFont: 'din',
+  clockFont: 'din',
   logoScale: 100,
   logoMotion: 'dvd',
   showSubtitle: false,
@@ -134,6 +137,8 @@ function normalizeState(raw) {
   next.mainText = String(raw.mainText || '').slice(0, 300);
   next.returnTime = String(raw.returnTime || '').trim().slice(0, 5);
   if (VALID_CLOCK_STYLES.includes(raw.clockStyle)) next.clockStyle = raw.clockStyle;
+  if (VALID_DISPLAY_FONTS.includes(raw.displayFont)) next.displayFont = raw.displayFont;
+  if (VALID_DISPLAY_FONTS.includes(raw.clockFont)) next.clockFont = raw.clockFont;
   next.logoScale = clampInt(raw.logoScale, 40, 180, next.logoScale);
   if (VALID_LOGO_MOTIONS.includes(raw.logoMotion)) next.logoMotion = raw.logoMotion;
   next.showSubtitle = Boolean(raw.showSubtitle);
@@ -161,6 +166,8 @@ function persistableState() {
     mainText: state.mainText,
     returnTime: state.returnTime,
     clockStyle: state.clockStyle,
+    displayFont: state.displayFont,
+    clockFont: state.clockFont,
     logoScale: state.logoScale,
     logoMotion: state.logoMotion,
     showSubtitle: state.showSubtitle,
@@ -202,6 +209,8 @@ function createSnapshot() {
     mainText: state.mainText,
     returnTime: state.returnTime,
     clockStyle: state.clockStyle,
+    displayFont: state.displayFont,
+    clockFont: state.clockFont,
     logoScale: state.logoScale,
     logoMotion: state.logoMotion,
     showSubtitle: state.showSubtitle,
@@ -323,6 +332,18 @@ function handleAction(payload) {
       state.updatedAt = Date.now();
       break;
 
+    case 'set-display-font':
+      if (!VALID_DISPLAY_FONTS.includes(payload.font)) throw new Error('Neplatné písmo výstupu.');
+      state.displayFont = payload.font;
+      state.updatedAt = Date.now();
+      break;
+
+    case 'set-clock-font':
+      if (!VALID_DISPLAY_FONTS.includes(payload.font)) throw new Error('Neplatné písmo hodin.');
+      state.clockFont = payload.font;
+      state.updatedAt = Date.now();
+      break;
+
     case 'set-logo-scale':
       state.logoScale = clampInt(payload.scale, 40, 180, state.logoScale);
       state.updatedAt = Date.now();
@@ -352,6 +373,8 @@ function handleAction(payload) {
         mainText: state.mainText,
         returnTime: state.returnTime,
         clockStyle: state.clockStyle,
+        displayFont: state.displayFont,
+        clockFont: state.clockFont,
         logoScale: state.logoScale,
         logoMotion: state.logoMotion,
         showSubtitle: state.showSubtitle,
@@ -385,6 +408,8 @@ function handleAction(payload) {
       state.mainText = tmpl.mainText || '';
       state.returnTime = tmpl.returnTime || '';
       state.clockStyle = tmpl.clockStyle || 'digital';
+      state.displayFont = VALID_DISPLAY_FONTS.includes(tmpl.displayFont) ? tmpl.displayFont : DEFAULT_STATE.displayFont;
+      state.clockFont = VALID_DISPLAY_FONTS.includes(tmpl.clockFont) ? tmpl.clockFont : DEFAULT_STATE.clockFont;
       state.logoScale = clampInt(tmpl.logoScale, 40, 180, DEFAULT_STATE.logoScale);
       state.logoMotion = VALID_LOGO_MOTIONS.includes(tmpl.logoMotion) ? tmpl.logoMotion : DEFAULT_STATE.logoMotion;
       state.showSubtitle = Boolean(tmpl.showSubtitle);
@@ -471,7 +496,7 @@ const server = http.createServer(async (req, res) => {
 
 setInterval(() => {
   syncTimer();
-  const key = `${state.mainMode}|${state.remainingSeconds}|${state.running}|${state.finished}|${state.mainText}|${state.returnTime}|${state.clockStyle}|${state.logoScale}|${state.logoMotion}|${state.showSubtitle}|${state.subtitleText}|${state.showContact}|${state.contactName}|${state.contactPhone}`;
+  const key = `${state.mainMode}|${state.remainingSeconds}|${state.running}|${state.finished}|${state.mainText}|${state.returnTime}|${state.clockStyle}|${state.displayFont}|${state.clockFont}|${state.logoScale}|${state.logoMotion}|${state.showSubtitle}|${state.subtitleText}|${state.showContact}|${state.contactName}|${state.contactPhone}`;
   if (key !== lastKey) {
     if (!state.running || state.mainMode !== 'timer' || state.finished || state.remainingSeconds === 0) saveState();
     lastKey = key;

@@ -21,6 +21,8 @@
       --emerald: #53e0b5;
       --font-ui: "Avenir Next", "Segoe UI", sans-serif;
       --font-display: "DIN Alternate", "Avenir Next Condensed", "Helvetica Neue", sans-serif;
+      --scene-font: "DIN Alternate", "Avenir Next Condensed", "Helvetica Neue", sans-serif;
+      --clock-font: "DIN Alternate", "Avenir Next Condensed", "Helvetica Neue", sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
@@ -227,7 +229,7 @@
     }
 
     .display-numeric {
-      font-family: var(--font-display);
+      font-family: var(--scene-font);
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.06em;
       line-height: 0.88;
@@ -236,13 +238,17 @@
     .timer-num,
     .clock-digital-time,
     .return-time-big {
-      font-family: var(--font-display);
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.065em;
       line-height: 0.86;
       color: var(--cyan);
       text-shadow: 0 0 36px rgba(114,233,255,0.24), 0 0 100px rgba(31,89,255,0.18);
     }
+
+    .timer-num,
+    .return-time-big { font-family: var(--scene-font); }
+
+    .clock-digital-time { font-family: var(--clock-font); }
 
     .timer-num,
     .clock-digital-time {
@@ -288,6 +294,7 @@
       font-weight: 900;
       letter-spacing: 0.18em;
       color: var(--cyan);
+      font-family: var(--scene-font);
       text-shadow: 0 0 40px rgba(114,233,255,0.22);
       animation: pulse 2.8s ease-in-out infinite;
     }
@@ -306,6 +313,7 @@
       word-break: break-word;
       letter-spacing: -0.03em;
       text-wrap: balance;
+      font-family: var(--scene-font);
     }
 
     #panel-return {
@@ -330,7 +338,7 @@
       font-size: clamp(2.6rem, 10vw, 6rem);
       font-weight: 900;
       color: rgba(245,249,255,0.62);
-      font-family: var(--font-display);
+      font-family: var(--clock-font);
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.05em;
       line-height: 0.92;
@@ -405,6 +413,7 @@
       max-height: 74vh;
       display: grid;
       place-items: center;
+      overflow: hidden;
     }
 
     .idle-stage::before,
@@ -449,6 +458,11 @@
       z-index: 1;
       width: min(52vw, 680px);
       will-change: transform;
+    }
+
+    .idle-stage.motion-dvd .idle-logo-wrap {
+      top: 0;
+      left: 0;
     }
 
     .idle-logo {
@@ -538,6 +552,18 @@
       letter-spacing: -0.04em;
       text-shadow: 0 0 26px rgba(114,233,255,0.18);
     }
+
+    /* The preview is a scaled desktop composition, not a small-screen display. */
+    body.embed-mode .scene-kicker { font-size: clamp(0.48rem, 1.15vw, 1.1rem); }
+    body.embed-mode .timer-num,
+    body.embed-mode .clock-digital-time { font-size: clamp(1.45rem, 19vw, 15rem); }
+    body.embed-mode .return-time-big { font-size: clamp(1.25rem, 13vw, 10.5rem); }
+    body.embed-mode .return-now-digital { font-size: clamp(0.9rem, 7.5vw, 6rem); }
+    body.embed-mode .pause-word { font-size: clamp(1.35rem, 14vw, 11rem); }
+    body.embed-mode .main-text-display { font-size: clamp(0.95rem, 7.2vw, 5.8rem); }
+    body.embed-mode .timer-meta,
+    body.embed-mode .return-label { font-size: clamp(0.5rem, 1.7vw, 1.3rem); }
+    body.embed-mode .subtitle-bar { font-size: clamp(0.55rem, 2.5vw, 2rem); }
 
     .contact-sep {
       width: 1px;
@@ -675,6 +701,13 @@
     const params = new URLSearchParams(location.search);
     const isEmbed = params.get('embed') === '1';
     if (isEmbed) document.body.classList.add('embed-mode');
+
+    const FONT_STACKS = {
+      din: '"DIN Alternate", "Avenir Next Condensed", "Helvetica Neue", sans-serif',
+      avenir: '"Avenir Next", "Segoe UI", sans-serif',
+      mono: 'ui-monospace, "SFMono-Regular", Menlo, monospace',
+      serif: 'Georgia, "Times New Roman", serif',
+    };
 
     const panels = {
       timer: document.getElementById('panel-timer'),
@@ -828,6 +861,11 @@
       else timerMeta.textContent = `Připraveno: ${fmt(duration)}`;
     }
 
+    function applyFonts(state) {
+      document.documentElement.style.setProperty('--scene-font', FONT_STACKS[state.displayFont] || FONT_STACKS.din);
+      document.documentElement.style.setProperty('--clock-font', FONT_STACKS[state.clockFont] || FONT_STACKS.din);
+    }
+
     function stopLogoMotion() {
       if (logoStartFrameId) cancelAnimationFrame(logoStartFrameId);
       if (logoFrameId) cancelAnimationFrame(logoFrameId);
@@ -910,6 +948,7 @@
       setMode(state.mainMode);
       setClockStyle(state.clockStyle || 'digital');
 
+      applyFonts(state);
       renderTimer(state);
       renderLogo(state);
       mainTextEl.textContent = state.mainText || '';
@@ -981,6 +1020,11 @@
     const es = new EventSource('/events');
     es.onmessage = (e) => render(JSON.parse(e.data));
     es.onerror = () => setTimeout(() => location.reload(), 4000);
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== location.origin || event.data?.type !== 'display-state') return;
+      render(event.data.state);
+    });
 
     fetch('/api/state', { cache: 'no-store' })
       .then((res) => res.json())

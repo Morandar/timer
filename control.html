@@ -646,6 +646,52 @@
 
     .logo-motion-group .seg-btn { min-width: 0; padding: 12px 10px; }
 
+    .appearance-panel {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 18px;
+    }
+
+    .appearance-title {
+      font-size: 1.12rem;
+      font-weight: 760;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    .appearance-copy {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .font-settings {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .font-setting {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .font-choice-group {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      width: 100%;
+    }
+
+    .font-choice-group .seg-btn {
+      min-width: 0;
+      padding: 10px 8px;
+      font-size: 0.82rem;
+    }
+
     .toggle-block {
       border: 1px solid var(--line);
       border-radius: 22px;
@@ -1002,7 +1048,8 @@
       }
       .editor-hero,
       .timer-composer,
-      .return-composer {
+      .return-composer,
+      .font-settings {
         grid-template-columns: 1fr;
       }
       .hero-stat { min-width: 0; }
@@ -1032,6 +1079,7 @@
       .launch-btn { width: 100%; justify-content: center; }
       .seg-group { width: 100%; }
       .seg-btn { min-width: 0; }
+      .font-choice-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -1350,6 +1398,34 @@
                 <button class="launch-btn primary" data-mode="blank">Přepnout na prázdnou plochu</button>
               </div>
             </div>
+
+            <section class="appearance-panel" aria-label="Vzhled výstupu">
+              <div>
+                <div class="panel-kicker">Vzhled výstupu</div>
+                <div class="appearance-title">Typografie displaye</div>
+                <div class="appearance-copy">Volby se propíší na skutečný display, živý náhled i do uložených presetů.</div>
+              </div>
+              <div class="font-settings">
+                <div class="font-setting">
+                  <div class="field-label">Písmo hlavní scény</div>
+                  <div class="seg-group font-choice-group" role="group" aria-label="Písmo hlavní scény">
+                    <button class="seg-btn" data-display-font="din">DIN</button>
+                    <button class="seg-btn" data-display-font="avenir">Avenir</button>
+                    <button class="seg-btn" data-display-font="mono">Mono</button>
+                    <button class="seg-btn" data-display-font="serif">Serif</button>
+                  </div>
+                </div>
+                <div class="font-setting">
+                  <div class="field-label">Písmo digitálních hodin</div>
+                  <div class="seg-group font-choice-group" role="group" aria-label="Písmo digitálních hodin">
+                    <button class="seg-btn" data-clock-font="din">DIN</button>
+                    <button class="seg-btn" data-clock-font="avenir">Avenir</button>
+                    <button class="seg-btn" data-clock-font="mono">Mono</button>
+                    <button class="seg-btn" data-clock-font="serif">Serif</button>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </section>
       </main>
@@ -1366,7 +1442,7 @@
           <div class="panel-body">
             <div class="preview-stage">
               <div class="preview-device">
-                <iframe id="previewFrame" class="preview-frame" src="/display?embed=1" title="Živý náhled displaye"></iframe>
+                <iframe id="previewFrame" class="preview-frame" src="/display?embed=1&amp;preview=1" title="Živý náhled displaye"></iframe>
               </div>
             </div>
           </div>
@@ -1459,6 +1535,13 @@
       static: 'Bez pohybu',
     };
 
+    const FONT_LABELS = {
+      din: 'DIN',
+      avenir: 'Avenir',
+      mono: 'Mono',
+      serif: 'Serif',
+    };
+
     const editors = {
       timer: document.getElementById('timerCtrl'),
       return: document.getElementById('returnCtrl'),
@@ -1481,6 +1564,7 @@
     const connectionDot = document.getElementById('connectionDot');
     const connectionLabel = document.getElementById('connectionLabel');
     const openDisplayBtn = document.getElementById('openDisplayBtn');
+    const previewFrame = document.getElementById('previewFrame');
 
     const minutesInput = document.getElementById('minutesInput');
     const setDurBtn = document.getElementById('setDurBtn');
@@ -1499,6 +1583,8 @@
     const logoScaleInput = document.getElementById('logoScaleInput');
     const logoScaleValue = document.getElementById('logoScaleValue');
     const logoMotionBtns = document.querySelectorAll('[data-logo-motion]');
+    const displayFontBtns = document.querySelectorAll('[data-display-font]');
+    const clockFontBtns = document.querySelectorAll('[data-clock-font]');
 
     const subtitleToggle = document.getElementById('subtitleToggle');
     const subtitleCollapse = document.getElementById('subtitleCollapse');
@@ -1587,7 +1673,9 @@
           break;
         case 'clock':
           heroStatValue.textContent = state.clockStyle === 'analog' ? 'Analog' : 'Digital';
-          heroStatNote.textContent = 'Aktivní styl hodin pro hlavní scénu i návratový panel.';
+          heroStatNote.textContent = state.clockStyle === 'analog'
+            ? 'Aktivní styl hodin pro hlavní scénu i návratový panel.'
+            : `Digitální písmo: ${FONT_LABELS[state.clockFont] || FONT_LABELS.din}.`;
           break;
         case 'text':
           heroStatValue.textContent = trimText(state.mainText, 22);
@@ -1625,6 +1713,8 @@
           badges.push(`<span class="template-badge">${t.logoScale || 100} %</span>`);
           badges.push(`<span class="template-badge">${LOGO_MOTION_LABELS[t.logoMotion] || LOGO_MOTION_LABELS.dvd}</span>`);
         }
+        if (t.displayFont && t.displayFont !== 'din') badges.push(`<span class="template-badge">Text: ${FONT_LABELS[t.displayFont] || FONT_LABELS.din}</span>`);
+        if (t.clockFont && t.clockFont !== 'din') badges.push(`<span class="template-badge">Hodiny: ${FONT_LABELS[t.clockFont] || FONT_LABELS.din}</span>`);
         if (t.showSubtitle && t.subtitleText) badges.push(`<span class="template-badge">${trimText(t.subtitleText, 20)}</span>`);
         if (t.showContact && t.contactName) badges.push(`<span class="template-badge">Kontakt: ${trimText(t.contactName, 18)}</span>`);
         return `
@@ -1715,6 +1805,12 @@
       };
     }
 
+    function syncPreview(state) {
+      try {
+        previewFrame.contentWindow?.postMessage({ type: 'display-state', state }, location.origin);
+      } catch {}
+    }
+
     function render(state) {
       st = state;
 
@@ -1738,6 +1834,8 @@
       if (document.activeElement !== logoScaleInput) logoScaleInput.value = String(state.logoScale || 100);
       logoScaleValue.textContent = `${state.logoScale || 100} %`;
       logoMotionBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.logoMotion === (state.logoMotion || 'dvd')));
+      displayFontBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.displayFont === (state.displayFont || 'din')));
+      clockFontBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.clockFont === (state.clockFont || 'din')));
 
       if (document.activeElement !== subtitleToggle) {
         subtitleToggle.checked = state.showSubtitle;
@@ -1753,6 +1851,7 @@
       if (document.activeElement !== contactPhoneInput) contactPhoneInput.value = state.contactPhone || '';
 
       renderConnection(state);
+      syncPreview(state);
     }
 
     modeBtns.forEach((btn) => {
@@ -1813,6 +1912,14 @@
 
     logoMotionBtns.forEach((btn) => {
       btn.addEventListener('click', () => send('set-logo-motion', { motion: btn.dataset.logoMotion }).catch(() => {}));
+    });
+
+    displayFontBtns.forEach((btn) => {
+      btn.addEventListener('click', () => send('set-display-font', { font: btn.dataset.displayFont }).catch(() => {}));
+    });
+
+    clockFontBtns.forEach((btn) => {
+      btn.addEventListener('click', () => send('set-clock-font', { font: btn.dataset.clockFont }).catch(() => {}));
     });
 
     subtitleToggle.addEventListener('change', () => {
@@ -1888,6 +1995,8 @@
       .then((res) => res.json())
       .then(render)
       .catch(() => {});
+
+    previewFrame.addEventListener('load', () => { if (st) syncPreview(st); });
 
     loadTemplates();
   </script>
