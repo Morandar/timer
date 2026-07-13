@@ -1575,7 +1575,9 @@
 
     const returnTimeInput = document.getElementById('returnTimeInput');
     const applyReturnBtn = document.getElementById('applyReturnBtn');
-    const segBtns = document.querySelectorAll('.seg-btn');
+    // Only clock-style buttons may activate the clock scene. Other segmented controls
+    // use the same visual class, but must leave the active scene unchanged.
+    const clockStyleBtns = document.querySelectorAll('[data-style]');
 
     const mainTextInput = document.getElementById('mainTextInput');
     const applyTextBtn = document.getElementById('applyTextBtn');
@@ -1828,7 +1830,7 @@
         : state.finished ? 'Čas vypršel' : `Nastaveno: ${fmt(state.durationSeconds)}`;
 
       if (document.activeElement !== returnTimeInput) returnTimeInput.value = state.returnTime || '';
-      segBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.style === (state.clockStyle || 'digital')));
+      clockStyleBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.style === (state.clockStyle || 'digital')));
       if (document.activeElement !== mainTextInput) mainTextInput.value = state.mainText || '';
 
       if (document.activeElement !== logoScaleInput) logoScaleInput.value = String(state.logoScale || 100);
@@ -1890,7 +1892,7 @@
       if (st?.mainMode !== 'return') await send('set-main-mode', { mode: 'return' }).catch(() => {});
     });
 
-    segBtns.forEach((btn) => {
+    clockStyleBtns.forEach((btn) => {
       btn.addEventListener('click', async () => {
         await send('set-clock-style', { style: btn.dataset.style }).catch(() => {});
         if (st?.mainMode !== 'clock') await send('set-main-mode', { mode: 'clock' }).catch(() => {});

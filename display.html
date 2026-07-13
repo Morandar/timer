@@ -416,6 +416,17 @@
       overflow: hidden;
     }
 
+    /* The DVD animation uses the whole available display canvas. */
+    #panel-logo {
+      padding: 0;
+    }
+
+    #panel-logo .idle-stage {
+      width: 100%;
+      height: 100%;
+      max-height: none;
+    }
+
     .idle-stage::before,
     .idle-stage::after {
       content: "";
@@ -458,6 +469,7 @@
       z-index: 1;
       width: min(52vw, 680px);
       will-change: transform;
+      backface-visibility: hidden;
     }
 
     .idle-stage.motion-dvd .idle-logo-wrap {
@@ -766,6 +778,7 @@
     let logoMotionSignature = '';
     let latestState = null;
     let logoPosition = { x: 0, y: 0, vx: 48, vy: 34 };
+    let logoBounds = { maxX: 0, maxY: 0 };
 
     function fmt(seconds) {
       const n = Math.max(0, Number(seconds) || 0);
@@ -883,38 +896,62 @@
       idleLogoWrap.style.width = `${Math.round(width)}px`;
     }
 
+    function updateDvdBounds(centerLogo = false) {
+      const stageWidth = idleStage.clientWidth;
+      const stageHeight = idleStage.clientHeight;
+      const logoWidth = idleLogoWrap.offsetWidth;
+      const logoHeight = idleLogoWrap.offsetHeight;
+
+      logoBounds.maxX = Math.max(0, stageWidth - logoWidth);
+      logoBounds.maxY = Math.max(0, stageHeight - logoHeight);
+
+      if (centerLogo) {
+        logoPosition.x = logoBounds.maxX / 2;
+        logoPosition.y = logoBounds.maxY / 2;
+      } else {
+        logoPosition.x = Math.max(0, Math.min(logoBounds.maxX, logoPosition.x));
+        logoPosition.y = Math.max(0, Math.min(logoBounds.maxY, logoPosition.y));
+      }
+    }
+
+    function advanceDvdAxis(position, velocity, limit, elapsed) {
+      if (limit <= 0) return { position: 0, velocity };
+
+      let nextPosition = position + velocity * elapsed;
+      let nextVelocity = velocity;
+
+      while (nextPosition < 0 || nextPosition > limit) {
+        if (nextPosition < 0) {
+          nextPosition = -nextPosition;
+          nextVelocity = Math.abs(nextVelocity);
+        } else {
+          nextPosition = 2 * limit - nextPosition;
+          nextVelocity = -Math.abs(nextVelocity);
+        }
+      }
+
+      return { position: nextPosition, velocity: nextVelocity };
+    }
+
     function startDvdMotion() {
       stopLogoMotion();
+      updateDvdBounds(true);
 
       const frame = (timestamp) => {
-        const stageWidth = idleStage.clientWidth;
-        const stageHeight = idleStage.clientHeight;
-        const logoWidth = idleLogoWrap.offsetWidth;
-        const logoHeight = idleLogoWrap.offsetHeight;
-        const maxX = Math.max(0, stageWidth - logoWidth);
-        const maxY = Math.max(0, stageHeight - logoHeight);
-
         if (!logoLastTick) {
-          logoPosition.x = maxX / 2;
-          logoPosition.y = maxY / 2;
           logoLastTick = timestamp;
         }
 
-        const elapsed = Math.min((timestamp - logoLastTick) / 1000, 0.06);
+        const elapsed = Math.min((timestamp - logoLastTick) / 1000, 0.1);
         logoLastTick = timestamp;
-        logoPosition.x += logoPosition.vx * elapsed;
-        logoPosition.y += logoPosition.vy * elapsed;
+        const horizontal = advanceDvdAxis(logoPosition.x, logoPosition.vx, logoBounds.maxX, elapsed);
+        const vertical = advanceDvdAxis(logoPosition.y, logoPosition.vy, logoBounds.maxY, elapsed);
+        logoPosition.x = horizontal.position;
+        logoPosition.vx = horizontal.velocity;
+        logoPosition.y = vertical.position;
+        logoPosition.vy = vertical.velocity;
 
-        if (logoPosition.x <= 0 || logoPosition.x >= maxX) {
-          logoPosition.x = Math.max(0, Math.min(maxX, logoPosition.x));
-          logoPosition.vx *= -1;
-        }
-        if (logoPosition.y <= 0 || logoPosition.y >= maxY) {
-          logoPosition.y = Math.max(0, Math.min(maxY, logoPosition.y));
-          logoPosition.vy *= -1;
-        }
-
-        idleLogoWrap.style.transform = `translate3d(${logoPosition.x.toFixed(1)}px, ${logoPosition.y.toFixed(1)}px, 0)`;
+        idleLogoWrap.style.transform = `translate3d(${logoPosition.x}px, ${logoPosition.y}px, 0)`;
         logoFrameId = requestAnimationFrame(frame);
       };
 
