@@ -400,10 +400,9 @@
 
     .idle-stage {
       position: relative;
-      width: min(70vw, 980px);
-      height: min(52vw, 620px);
-      max-width: 90vw;
-      max-height: 70vh;
+      width: min(92vw, 1320px);
+      height: min(68vw, 720px);
+      max-height: 74vh;
       display: grid;
       place-items: center;
     }
@@ -445,29 +444,34 @@
       to { transform: translate3d(-34px, -20px, 0); }
     }
 
+    .idle-logo-wrap {
+      position: absolute;
+      z-index: 1;
+      width: min(52vw, 680px);
+      will-change: transform;
+    }
+
     .idle-logo {
-      position: relative;
-      width: min(76vw, 820px);
-      max-width: 88vw;
+      width: 100%;
       height: auto;
       display: block;
       filter:
         drop-shadow(0 30px 80px rgba(0, 0, 0, 0.34))
         drop-shadow(0 0 40px rgba(31, 89, 255, 0.18));
-      animation: idle-float 5s ease-in-out infinite;
+    }
+
+    .idle-stage.motion-float .idle-logo-wrap,
+    .idle-stage.motion-static .idle-logo-wrap {
+      position: relative;
+    }
+
+    .idle-stage.motion-float .idle-logo-wrap {
+      animation: idle-float 6s ease-in-out infinite;
     }
 
     @keyframes idle-float {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-14px); }
-    }
-
-    .idle-caption {
-      margin-top: clamp(26px, 4vh, 42px);
-      font-size: clamp(1rem, 2.3vw, 1.8rem);
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: rgba(245,249,255,0.72);
     }
 
     #panel-blank {
@@ -635,9 +639,7 @@
         </section>
 
         <section id="panel-pause" class="scene-panel">
-          <div class="scene-kicker">Technická pauza</div>
           <div class="pause-word">PAUZA</div>
-          <div class="scene-subtle" style="margin-top: 18px;">Scéna je připravená pro krátké přerušení bez dalšího vysvětlování.</div>
         </section>
 
         <section id="panel-text" class="scene-panel">
@@ -646,11 +648,11 @@
         </section>
 
         <section id="panel-logo" class="scene-panel">
-          <div class="scene-kicker">Idle režim</div>
-          <div class="idle-stage">
-            <img class="idle-logo" src="/assets/o2-guru-logo.svg" alt="O2 Guru" />
+          <div id="idleStage" class="idle-stage motion-dvd">
+            <div id="idleLogoWrap" class="idle-logo-wrap">
+              <img class="idle-logo" src="/assets/o2-guru-logo.svg" alt="O2 Guru" />
+            </div>
           </div>
-          <div class="idle-caption">Standby display</div>
         </section>
 
         <section id="panel-blank" class="scene-panel"></section>
@@ -709,6 +711,8 @@
     const clockTicks = document.getElementById('clockTicks');
 
     const mainTextEl = document.getElementById('mainTextEl');
+    const idleStage = document.getElementById('idleStage');
+    const idleLogoWrap = document.getElementById('idleLogoWrap');
     const subtitleBar = document.getElementById('subtitleBar');
     const contactStrip = document.getElementById('contactStrip');
     const contactNameDisp = document.getElementById('contactNameDisp');
@@ -723,6 +727,12 @@
     let clockTickId = null;
     let wakeLock = null;
     let chromeTimer = null;
+    let logoFrameId = null;
+    let logoStartFrameId = null;
+    let logoLastTick = null;
+    let logoMotionSignature = '';
+    let latestState = null;
+    let logoPosition = { x: 0, y: 0, vx: 48, vy: 34 };
 
     function fmt(seconds) {
       const n = Math.max(0, Number(seconds) || 0);
@@ -791,6 +801,7 @@
     function setMode(mode) {
       if (currentMode === mode) return;
       currentMode = mode;
+      if (mode !== 'logo') stopLogoMotion();
       Object.entries(panels).forEach(([name, panel]) => panel.classList.toggle('active', name === mode));
       if (mode === 'clock' || mode === 'return') startClock(); else stopClock();
     }
@@ -817,20 +828,99 @@
       else timerMeta.textContent = `Připraveno: ${fmt(duration)}`;
     }
 
+    function stopLogoMotion() {
+      if (logoStartFrameId) cancelAnimationFrame(logoStartFrameId);
+      if (logoFrameId) cancelAnimationFrame(logoFrameId);
+      logoStartFrameId = null;
+      logoFrameId = null;
+      logoLastTick = null;
+    }
+
+    function setLogoWidth(scale) {
+      const stageWidth = idleStage.clientWidth;
+      if (!stageWidth) return;
+      const normalizedScale = Math.min(180, Math.max(40, Number(scale) || 100));
+      const baseWidth = Math.min(stageWidth * 0.55, 680);
+      const width = Math.min(stageWidth * 0.84, Math.max(150, baseWidth * normalizedScale / 100));
+      idleLogoWrap.style.width = `${Math.round(width)}px`;
+    }
+
+    function startDvdMotion() {
+      stopLogoMotion();
+
+      const frame = (timestamp) => {
+        const stageWidth = idleStage.clientWidth;
+        const stageHeight = idleStage.clientHeight;
+        const logoWidth = idleLogoWrap.offsetWidth;
+        const logoHeight = idleLogoWrap.offsetHeight;
+        const maxX = Math.max(0, stageWidth - logoWidth);
+        const maxY = Math.max(0, stageHeight - logoHeight);
+
+        if (!logoLastTick) {
+          logoPosition.x = maxX / 2;
+          logoPosition.y = maxY / 2;
+          logoLastTick = timestamp;
+        }
+
+        const elapsed = Math.min((timestamp - logoLastTick) / 1000, 0.06);
+        logoLastTick = timestamp;
+        logoPosition.x += logoPosition.vx * elapsed;
+        logoPosition.y += logoPosition.vy * elapsed;
+
+        if (logoPosition.x <= 0 || logoPosition.x >= maxX) {
+          logoPosition.x = Math.max(0, Math.min(maxX, logoPosition.x));
+          logoPosition.vx *= -1;
+        }
+        if (logoPosition.y <= 0 || logoPosition.y >= maxY) {
+          logoPosition.y = Math.max(0, Math.min(maxY, logoPosition.y));
+          logoPosition.vy *= -1;
+        }
+
+        idleLogoWrap.style.transform = `translate3d(${logoPosition.x.toFixed(1)}px, ${logoPosition.y.toFixed(1)}px, 0)`;
+        logoFrameId = requestAnimationFrame(frame);
+      };
+
+      logoFrameId = requestAnimationFrame(frame);
+    }
+
+    function renderLogo(state) {
+      const motion = ['dvd', 'float', 'static'].includes(state.logoMotion) ? state.logoMotion : 'dvd';
+      const scale = Math.min(180, Math.max(40, Number(state.logoScale) || 100));
+      const signature = `${state.mainMode}|${motion}|${scale}|${idleStage.clientWidth}|${idleStage.clientHeight}`;
+      if (signature === logoMotionSignature) return;
+      logoMotionSignature = signature;
+
+      idleStage.classList.remove('motion-dvd', 'motion-float', 'motion-static');
+      idleStage.classList.add(`motion-${motion}`);
+      stopLogoMotion();
+      setLogoWidth(scale);
+
+      if (state.mainMode === 'logo' && motion === 'dvd') {
+        logoStartFrameId = requestAnimationFrame(() => {
+          logoStartFrameId = null;
+          if (latestState?.mainMode === 'logo' && latestState.logoMotion === 'dvd') startDvdMotion();
+        });
+      } else {
+        idleLogoWrap.style.transform = '';
+      }
+    }
+
     function render(state) {
+      latestState = state;
       setMode(state.mainMode);
       setClockStyle(state.clockStyle || 'digital');
 
       renderTimer(state);
-      mainTextEl.textContent = state.mainText || '—';
-      returnTimeBig.textContent = state.returnTime || '—';
+      renderLogo(state);
+      mainTextEl.textContent = state.mainText || '';
+      returnTimeBig.textContent = state.returnTime || '';
 
       subtitleBar.classList.toggle('hidden', !state.showSubtitle || !state.subtitleText);
       subtitleBar.textContent = state.subtitleText || '';
 
       const showContact = state.showContact && (state.contactName || state.contactPhone);
       contactStrip.classList.toggle('hidden', !showContact);
-      contactNameDisp.textContent = state.contactName || 'Kontakt';
+      contactNameDisp.textContent = state.contactName || '';
       contactPhoneDisp.textContent = state.contactPhone || '';
       contactSep.classList.toggle('hidden', !(state.contactName && state.contactPhone));
     }
@@ -865,6 +955,10 @@
 
     buildTicks(clockTicks);
     buildTicks(rClockTicks);
+    window.addEventListener('resize', () => {
+      logoMotionSignature = '';
+      if (latestState) renderLogo(latestState);
+    });
 
     if (isEmbed) {
       fullscreenBtn.hidden = true;

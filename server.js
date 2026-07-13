@@ -22,6 +22,7 @@ const CONTENT_TYPES = {
 };
 const VALID_MAIN_MODES = ['timer', 'return', 'clock', 'pause', 'text', 'logo', 'blank'];
 const VALID_CLOCK_STYLES = ['digital', 'analog'];
+const VALID_LOGO_MOTIONS = ['dvd', 'float', 'static'];
 // Na Fly.io se templates ukládají na volume /data, lokálně vedle server.js
 const DATA_DIR = process.env.DATA_DIR || ROOT;
 const TEMPLATES_FILE = path.join(DATA_DIR, 'templates.json');
@@ -37,6 +38,8 @@ const DEFAULT_STATE = {
   mainText: '',
   returnTime: '',
   clockStyle: 'digital',
+  logoScale: 100,
+  logoMotion: 'dvd',
   showSubtitle: false,
   subtitleText: '',
   showContact: false,
@@ -131,6 +134,8 @@ function normalizeState(raw) {
   next.mainText = String(raw.mainText || '').slice(0, 300);
   next.returnTime = String(raw.returnTime || '').trim().slice(0, 5);
   if (VALID_CLOCK_STYLES.includes(raw.clockStyle)) next.clockStyle = raw.clockStyle;
+  next.logoScale = clampInt(raw.logoScale, 40, 180, next.logoScale);
+  if (VALID_LOGO_MOTIONS.includes(raw.logoMotion)) next.logoMotion = raw.logoMotion;
   next.showSubtitle = Boolean(raw.showSubtitle);
   next.subtitleText = String(raw.subtitleText || '').slice(0, 200);
   next.showContact = Boolean(raw.showContact);
@@ -156,6 +161,8 @@ function persistableState() {
     mainText: state.mainText,
     returnTime: state.returnTime,
     clockStyle: state.clockStyle,
+    logoScale: state.logoScale,
+    logoMotion: state.logoMotion,
     showSubtitle: state.showSubtitle,
     subtitleText: state.subtitleText,
     showContact: state.showContact,
@@ -195,6 +202,8 @@ function createSnapshot() {
     mainText: state.mainText,
     returnTime: state.returnTime,
     clockStyle: state.clockStyle,
+    logoScale: state.logoScale,
+    logoMotion: state.logoMotion,
     showSubtitle: state.showSubtitle,
     subtitleText: state.subtitleText,
     showContact: state.showContact,
@@ -314,6 +323,17 @@ function handleAction(payload) {
       state.updatedAt = Date.now();
       break;
 
+    case 'set-logo-scale':
+      state.logoScale = clampInt(payload.scale, 40, 180, state.logoScale);
+      state.updatedAt = Date.now();
+      break;
+
+    case 'set-logo-motion':
+      if (!VALID_LOGO_MOTIONS.includes(payload.motion)) throw new Error('Neplatný pohyb loga.');
+      state.logoMotion = payload.motion;
+      state.updatedAt = Date.now();
+      break;
+
     case 'set-contact':
       if (payload.show !== undefined) state.showContact = Boolean(payload.show);
       if (payload.name !== undefined) state.contactName = String(payload.name).slice(0, 100);
@@ -332,6 +352,8 @@ function handleAction(payload) {
         mainText: state.mainText,
         returnTime: state.returnTime,
         clockStyle: state.clockStyle,
+        logoScale: state.logoScale,
+        logoMotion: state.logoMotion,
         showSubtitle: state.showSubtitle,
         subtitleText: state.subtitleText,
         showContact: state.showContact,
@@ -363,6 +385,8 @@ function handleAction(payload) {
       state.mainText = tmpl.mainText || '';
       state.returnTime = tmpl.returnTime || '';
       state.clockStyle = tmpl.clockStyle || 'digital';
+      state.logoScale = clampInt(tmpl.logoScale, 40, 180, DEFAULT_STATE.logoScale);
+      state.logoMotion = VALID_LOGO_MOTIONS.includes(tmpl.logoMotion) ? tmpl.logoMotion : DEFAULT_STATE.logoMotion;
       state.showSubtitle = Boolean(tmpl.showSubtitle);
       state.subtitleText = tmpl.subtitleText || '';
       state.showContact = Boolean(tmpl.showContact);
@@ -447,7 +471,7 @@ const server = http.createServer(async (req, res) => {
 
 setInterval(() => {
   syncTimer();
-  const key = `${state.mainMode}|${state.remainingSeconds}|${state.running}|${state.finished}|${state.mainText}|${state.returnTime}|${state.clockStyle}|${state.showSubtitle}|${state.subtitleText}|${state.showContact}|${state.contactName}|${state.contactPhone}`;
+  const key = `${state.mainMode}|${state.remainingSeconds}|${state.running}|${state.finished}|${state.mainText}|${state.returnTime}|${state.clockStyle}|${state.logoScale}|${state.logoMotion}|${state.showSubtitle}|${state.subtitleText}|${state.showContact}|${state.contactName}|${state.contactPhone}`;
   if (key !== lastKey) {
     if (!state.running || state.mainMode !== 'timer' || state.finished || state.remainingSeconds === 0) saveState();
     lastKey = key;
