@@ -206,8 +206,11 @@
       min-width: 0;
     }
 
+    .left-column .panel-head { padding: 16px 16px 0; }
+    .left-column .panel-body { padding: 16px; }
+    .left-column .panel-subtitle,
     .left-column .toggle-copy-desc { display: none; }
-    .left-column .toggle-row { padding: 14px 16px; }
+    .left-column .toggle-row { padding: 13px 14px; }
     .left-column .panel-body.cluster { gap: 10px; }
 
     .panel {
@@ -283,8 +286,8 @@
       border-radius: 16px;
       background: rgba(255,255,255,0.03);
       color: var(--text);
-      min-height: 118px;
-      padding: 12px;
+      min-height: 74px;
+      padding: 10px;
       cursor: pointer;
       transition: transform 140ms ease, border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
     }
@@ -301,7 +304,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 9px;
     }
 
     .scene-code {
@@ -325,20 +328,21 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: none;
     }
 
     .scene-name {
       font-size: 0.92rem;
       font-weight: 750;
       letter-spacing: -0.02em;
-      margin-bottom: 6px;
+      margin-bottom: 0;
     }
 
     .scene-desc {
       color: var(--muted);
       line-height: 1.35;
       font-size: 0.78rem;
-      display: -webkit-box;
+      display: none;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       overflow: hidden;
@@ -646,13 +650,32 @@
 
     .logo-motion-group .seg-btn { min-width: 0; padding: 12px 10px; }
 
-    .appearance-panel {
+    .advanced-panel {
       margin-top: 26px;
-      padding-top: 22px;
       border-top: 1px solid var(--line);
-      display: grid;
-      gap: 18px;
     }
+
+    .advanced-panel summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 0;
+      cursor: pointer;
+      list-style: none;
+      color: var(--text);
+      font-weight: 760;
+    }
+
+    .advanced-panel summary::-webkit-details-marker { display: none; }
+    .advanced-panel summary::after {
+      content: "+";
+      color: var(--blue-soft);
+      font-size: 1.4rem;
+      font-weight: 400;
+    }
+    .advanced-panel[open] summary::after { content: "−"; }
+    .advanced-body { padding: 0 0 4px; }
 
     .appearance-title {
       font-size: 1.12rem;
@@ -1091,7 +1114,7 @@
         <div class="brand-copy">
           <div class="eyebrow">Display Console</div>
           <h1>Stánek Control</h1>
-          <p>Jedno místo pro řízení scén, doplňků a presetů. Ovládání je přestavěné tak, aby bylo rychlé při akci a čitelné i pod tlakem.</p>
+      <p>Vyber scénu, nastav obsah a otevři display.</p>
         </div>
       </div>
       <div class="topbar-actions">
@@ -1108,9 +1131,8 @@
         <section class="panel">
           <div class="panel-head">
             <div>
-              <div class="panel-kicker">Scény</div>
-              <div class="panel-title">Co se má právě zobrazovat</div>
-              <div class="panel-subtitle">Vybereš scénu, upravíš její parametry a změna se okamžitě propíše do všech připojených displayů.</div>
+              <div class="panel-kicker">Scéna</div>
+              <div class="panel-title">Obsah displaye</div>
             </div>
           </div>
           <div class="panel-body">
@@ -1118,58 +1140,44 @@
               <button class="scene-card active" data-mode="timer">
                 <div class="scene-card-head">
                   <span class="scene-code">TMR</span>
-                  <span class="scene-state">aktivní časovač</span>
                 </div>
                 <div class="scene-name">Odpočet</div>
-                <div class="scene-desc">Velký countdown pro přestávky, bloky a časově řízené vstupy.</div>
               </button>
               <button class="scene-card" data-mode="return">
                 <div class="scene-card-head">
                   <span class="scene-code">RET</span>
-                  <span class="scene-state">pevný návrat</span>
                 </div>
                 <div class="scene-name">Vrátím se</div>
-                <div class="scene-desc">Zobrazí přesný čas návratu bez rizika špatného relativního odpočtu.</div>
               </button>
               <button class="scene-card" data-mode="clock">
                 <div class="scene-card-head">
                   <span class="scene-code">CLK</span>
-                  <span class="scene-state">živý čas</span>
                 </div>
                 <div class="scene-name">Hodiny</div>
-                <div class="scene-desc">Digitální nebo analogové hodiny pro klidový režim stánku.</div>
               </button>
               <button class="scene-card" data-mode="pause">
                 <div class="scene-card-head">
                   <span class="scene-code">PAU</span>
-                  <span class="scene-state">pauza</span>
                 </div>
                 <div class="scene-name">Pauza</div>
-                <div class="scene-desc">Jednoduchá scéna pro krátké technické přerušení.</div>
               </button>
               <button class="scene-card" data-mode="text">
                 <div class="scene-card-head">
                   <span class="scene-code">MSG</span>
-                  <span class="scene-state">volná zpráva</span>
                 </div>
                 <div class="scene-name">Text</div>
-                <div class="scene-desc">Krátké sdělení, uvítání nebo rychlá informace pro zákazníka.</div>
               </button>
               <button class="scene-card" data-mode="logo">
                 <div class="scene-card-head">
                   <span class="scene-code">IDL</span>
-                  <span class="scene-state">idle režim</span>
                 </div>
-                <div class="scene-name">Idle / Logo</div>
-                <div class="scene-desc">Ambientní scénář, když nic neběží a chceš držet brand v pohybu.</div>
+                <div class="scene-name">Logo</div>
               </button>
               <button class="scene-card" data-mode="blank">
                 <div class="scene-card-head">
                   <span class="scene-code">BLK</span>
-                  <span class="scene-state">černá plocha</span>
                 </div>
-                <div class="scene-name">Prázdná</div>
-                <div class="scene-desc">Čistá černá obrazovka bez rušivých prvků.</div>
+                <div class="scene-name">Černá plocha</div>
               </button>
             </div>
           </div>
@@ -1179,8 +1187,7 @@
           <div class="panel-head">
             <div>
               <div class="panel-kicker">Doplňky</div>
-              <div class="panel-title">Vrstva pod hlavní scénou</div>
-              <div class="panel-subtitle">Podtitulek a kontakt fungují jako overlay. Můžeš je zapnout nezávisle na hlavním módu.</div>
+              <div class="panel-title">Spodní informace</div>
             </div>
           </div>
           <div class="panel-body cluster">
@@ -1200,20 +1207,8 @@
                   <div>
                     <label class="field-label" for="subtitleInput">Text podtitulku</label>
                     <input id="subtitleInput" type="text" maxlength="200" placeholder="Přijdu za chvíli, prosím vyčkejte." />
+                    <div class="field-note">Změny se zobrazí automaticky během psaní.</div>
                   </div>
-                  <div>
-                    <div class="field-label">Rychlý návrat s timerem</div>
-                    <div class="quick-row">
-                      <button class="quick-chip" data-return="5">+5 min</button>
-                      <button class="quick-chip" data-return="10">+10 min</button>
-                      <button class="quick-chip" data-return="15">+15 min</button>
-                      <button class="quick-chip" data-return="20">+20 min</button>
-                      <button class="quick-chip" data-return="30">+30 min</button>
-                      <button class="quick-chip" data-return="60">+60 min</button>
-                    </div>
-                    <div class="field-note">Tahle akce současně nastaví timer, zapne scénu Odpočet a vygeneruje text „Vrátím se v HH:MM“.</div>
-                  </div>
-                  <button id="applySubtitleBtn" class="launch-btn primary">Použít podtitulek</button>
                 </div>
               </div>
             </div>
@@ -1239,7 +1234,7 @@
                     <label class="field-label" for="contactPhoneInput">Telefon</label>
                     <input id="contactPhoneInput" type="tel" maxlength="30" placeholder="+420 777 123 456" />
                   </div>
-                  <button id="saveContactBtn" class="launch-btn primary">Uložit a zobrazit kontakt</button>
+                  <div class="field-note">Změny se zobrazí automaticky během psaní.</div>
                 </div>
               </div>
             </div>
@@ -1315,7 +1310,7 @@
                       <input id="returnTimeInput" type="time" />
                       <button id="applyReturnBtn" class="launch-btn primary">Publikovat návrat</button>
                     </div>
-                    <div class="field-note">Display ukáže aktuální čas nahoře a pod ním pevný návratový čas bez relativního countdownu.</div>
+                    <div class="field-note">Display ukáže jednoznačně „Vrátím se ve [čas]“.</div>
                   </div>
                   <div>
                     <div class="field-label">Přidat od teď</div>
@@ -1341,7 +1336,7 @@
                       <button class="seg-btn active" data-style="digital">Digitální</button>
                       <button class="seg-btn" data-style="analog">Analogové</button>
                     </div>
-                    <div class="field-note">Volba se promítá jak do hlavních hodin, tak do horní části scény „Vrátím se“.</div>
+                    <div class="field-note">Volba platí pro scénu Hodiny.</div>
                   </div>
                 </div>
               </div>
@@ -1399,13 +1394,9 @@
               </div>
             </div>
 
-            <section class="appearance-panel" aria-label="Vzhled výstupu">
-              <div>
-                <div class="panel-kicker">Vzhled výstupu</div>
-                <div class="appearance-title">Typografie displaye</div>
-                <div class="appearance-copy">Volby se propíší na skutečný display, živý náhled i do uložených presetů.</div>
-              </div>
-              <div class="font-settings">
+            <details class="advanced-panel" aria-label="Vzhled výstupu">
+              <summary>Vzhled a písmo</summary>
+              <div class="advanced-body font-settings">
                 <div class="font-setting">
                   <div class="field-label">Písmo hlavní scény</div>
                   <div class="seg-group font-choice-group" role="group" aria-label="Písmo hlavní scény">
@@ -1425,7 +1416,7 @@
                   </div>
                 </div>
               </div>
-            </section>
+            </details>
           </div>
         </section>
       </main>
@@ -1510,13 +1501,13 @@
     let tmpls = [];
 
     const SCENES = {
-      timer:  { code: 'TMR', title: 'Odpočet', desc: 'Countdown pro blok, přestávku nebo řízený slot. Změny se propíšou okamžitě na display.', state: (s) => s.running ? `Běží ${fmt(s.remainingSeconds)}` : s.finished ? 'Čas vypršel' : `Připraveno ${fmt(s.durationSeconds)}` },
-      return: { code: 'RET', title: 'Vrátím se', desc: 'Zobrazuje pevný návratový čas a nad ním živé hodiny. Bez relativního odpočtu do dalšího dne.', state: (s) => s.returnTime ? `Návrat ${s.returnTime}` : 'Čeká na čas návratu' },
-      clock:  { code: 'CLK', title: 'Hodiny', desc: 'Klidová scéna s živým časem. Hodí se mezi bloky nebo když display nechceš nechat prázdný.', state: (s) => s.clockStyle === 'analog' ? 'Analogové' : 'Digitální' },
-      pause:  { code: 'PAU', title: 'Pauza', desc: 'Jednoduchá a čitelná pauzová scéna bez další logiky.', state: () => 'Technická pauza' },
-      text:   { code: 'MSG', title: 'Text', desc: 'Volná zpráva přes celou plochu. Vhodné pro uvítání, omluvu nebo operativní instrukci.', state: (s) => s.mainText ? trimText(s.mainText, 40) : 'Bez zprávy' },
-      logo:   { code: 'IDL', title: 'Idle / Logo', desc: 'Ambientní brandová scéna, když nechceš aktivní informaci, ale ani mrtvou obrazovku.', state: () => 'Idle režim' },
-      blank:  { code: 'BLK', title: 'Prázdná', desc: 'Čistá černá plocha bez rušivých prvků.', state: () => 'Černá obrazovka' },
+      timer:  { code: 'TMR', title: 'Odpočet', desc: 'Nastav délku a spusť odpočet.', state: (s) => s.running ? `Běží ${fmt(s.remainingSeconds)}` : s.finished ? 'Čas vypršel' : `Připraveno ${fmt(s.durationSeconds)}` },
+      return: { code: 'RET', title: 'Vrátím se', desc: 'Nastav přesný čas návratu.', state: (s) => s.returnTime ? `Vrátím se ve ${s.returnTime}` : 'Nastav čas návratu' },
+      clock:  { code: 'CLK', title: 'Hodiny', desc: 'Zobraz aktuální čas.', state: (s) => s.clockStyle === 'analog' ? 'Analogové' : 'Digitální' },
+      pause:  { code: 'PAU', title: 'Pauza', desc: 'Zobraz jednoduchou pauzu.', state: () => 'Technická pauza' },
+      text:   { code: 'MSG', title: 'Text', desc: 'Napiš vlastní zprávu.', state: (s) => s.mainText ? trimText(s.mainText, 40) : 'Bez zprávy' },
+      logo:   { code: 'IDL', title: 'Logo', desc: 'Zobraz logo ve zvoleném pohybu.', state: () => 'Logo' },
+      blank:  { code: 'BLK', title: 'Černá plocha', desc: 'Vypni veškerý obsah.', state: () => 'Černá obrazovka' },
     };
 
     const MODE_BADGES = {
@@ -1525,8 +1516,8 @@
       clock: 'Hodiny',
       pause: 'Pauza',
       text: 'Text',
-      logo: 'Idle',
-      blank: 'Prázdná',
+      logo: 'Logo',
+      blank: 'Černá plocha',
     };
 
     const LOGO_MOTION_LABELS = {
@@ -1541,6 +1532,9 @@
       mono: 'Mono',
       serif: 'Serif',
     };
+
+    let subtitleSaveTimer = null;
+    let contactSaveTimer = null;
 
     const editors = {
       timer: document.getElementById('timerCtrl'),
@@ -1591,13 +1585,11 @@
     const subtitleToggle = document.getElementById('subtitleToggle');
     const subtitleCollapse = document.getElementById('subtitleCollapse');
     const subtitleInput = document.getElementById('subtitleInput');
-    const applySubtitleBtn = document.getElementById('applySubtitleBtn');
 
     const contactToggle = document.getElementById('contactToggle');
     const contactCollapse = document.getElementById('contactCollapse');
     const contactNameInput = document.getElementById('contactNameInput');
     const contactPhoneInput = document.getElementById('contactPhoneInput');
-    const saveContactBtn = document.getElementById('saveContactBtn');
 
     const tmplNameInput = document.getElementById('tmplNameInput');
     const saveTmplBtn = document.getElementById('saveTmplBtn');
@@ -1930,34 +1922,34 @@
       send('set-subtitle', { show: on, text: subtitleInput.value }).catch(() => {});
     });
 
-    applySubtitleBtn.addEventListener('click', () => {
-      send('set-subtitle', { show: true, text: subtitleInput.value }).catch(() => {});
-    });
-
-    document.querySelectorAll('[data-return]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const mins = Number(btn.dataset.return);
-        const text = `Vrátím se v ${nowPlusMins(mins)}`;
-        subtitleInput.value = text;
-        subtitleToggle.checked = true;
-        setCollapse(subtitleCollapse, true);
-        await send('set-duration', { minutes: mins }).catch(() => {});
-        await send('set-main-mode', { mode: 'timer' }).catch(() => {});
-        await send('start-pause').catch(() => {});
-        await send('set-subtitle', { show: true, text }).catch(() => {});
-      });
+    subtitleInput.addEventListener('input', () => {
+      clearTimeout(subtitleSaveTimer);
+      subtitleSaveTimer = setTimeout(() => {
+        send('set-subtitle', { show: subtitleToggle.checked, text: subtitleInput.value }).catch(() => {});
+      }, 180);
     });
 
     contactToggle.addEventListener('change', () => {
       const on = contactToggle.checked;
       setCollapse(contactCollapse, on);
-      send('set-contact', { show: on }).catch(() => {});
+      send('set-contact', {
+        show: on,
+        name: contactNameInput.value,
+        phone: contactPhoneInput.value,
+      }).catch(() => {});
     });
 
-    saveContactBtn.addEventListener('click', () => {
-      send('set-contact', { show: true, name: contactNameInput.value, phone: contactPhoneInput.value }).catch(() => {});
-      contactToggle.checked = true;
-      setCollapse(contactCollapse, true);
+    [contactNameInput, contactPhoneInput].forEach((input) => {
+      input.addEventListener('input', () => {
+        clearTimeout(contactSaveTimer);
+        contactSaveTimer = setTimeout(() => {
+          send('set-contact', {
+            show: contactToggle.checked,
+            name: contactNameInput.value,
+            phone: contactPhoneInput.value,
+          }).catch(() => {});
+        }, 180);
+      });
     });
 
     saveTmplBtn.addEventListener('click', async () => {

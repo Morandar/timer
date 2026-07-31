@@ -317,52 +317,20 @@
     }
 
     #panel-return {
-      gap: 10px;
+      gap: clamp(14px, 3vh, 30px);
     }
 
-    .return-now-wrap {
-      display: grid;
-      gap: 10px;
-      place-items: center;
-      margin-bottom: clamp(10px, 2.5vh, 22px);
-    }
-
-    .return-now-label {
-      font-size: clamp(0.72rem, 1.2vw, 0.9rem);
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .return-now-digital {
-      font-size: clamp(2.6rem, 10vw, 6rem);
-      font-weight: 900;
-      color: rgba(245,249,255,0.62);
-      font-family: var(--clock-font);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.05em;
-      line-height: 0.92;
-    }
-
-    .return-analog-wrap.hidden,
     .digital-clock-wrap.hidden,
-    .analog-clock.hidden,
-    .return-now-digital.hidden {
+    .analog-clock.hidden {
       display: none !important;
     }
 
-    .return-analog-svg,
     .analog-svg {
       overflow: visible;
     }
 
-    .return-analog-svg {
-      width: clamp(140px, 18vw, 240px);
-      height: clamp(140px, 18vw, 240px);
-    }
-
     .return-divider {
-      width: clamp(90px, 14vw, 180px);
+      width: clamp(84px, 12vw, 156px);
       height: 2px;
       border-radius: 999px;
       background: linear-gradient(90deg, rgba(31,89,255,0.0), rgba(114,233,255,0.66), rgba(31,89,255,0.0));
@@ -370,16 +338,21 @@
     }
 
     .return-label {
-      font-size: clamp(0.88rem, 2vw, 1.3rem);
-      letter-spacing: 0.24em;
+      font-size: clamp(1rem, 2.5vw, 1.7rem);
+      font-weight: 750;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 8px;
+      color: var(--text);
     }
 
     .return-time-big {
-      font-size: clamp(4rem, 19vw, 10.5rem);
+      font-size: clamp(5rem, 22vw, 12rem);
       font-weight: 900;
+      color: var(--cyan);
+      font-family: var(--clock-font);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.06em;
+      line-height: 0.9;
     }
 
     .clock-scene {
@@ -597,7 +570,6 @@
     body.embed-mode .timer-num,
     body.embed-mode .clock-digital-time { font-size: clamp(1.45rem, 19vw, 15rem); }
     body.embed-mode .return-time-big { font-size: clamp(1.25rem, 13vw, 10.5rem); }
-    body.embed-mode .return-now-digital { font-size: clamp(0.9rem, 7.5vw, 6rem); }
     body.embed-mode .pause-word { font-size: clamp(1.35rem, 14vw, 11rem); }
     body.embed-mode .main-text-display { font-size: clamp(0.95rem, 7.2vw, 5.8rem); }
     body.embed-mode .timer-meta,
@@ -664,23 +636,8 @@
         </section>
 
         <section id="panel-return" class="scene-panel">
-          <div class="return-now-wrap">
-            <div class="return-now-label">Aktuální čas</div>
-            <div id="returnNowDigital" class="return-now-digital">00:00</div>
-            <div id="returnAnalogWrap" class="return-analog-wrap hidden">
-              <svg class="return-analog-svg" viewBox="0 0 200 200" aria-hidden="true">
-                <circle cx="100" cy="100" r="95" fill="rgba(255,255,255,0.03)" stroke="rgba(145,168,220,0.18)" stroke-width="1.5"></circle>
-                <g id="rClockTicks"></g>
-                <line id="rHrHand" x1="100" y1="112" x2="100" y2="54" stroke="white" stroke-width="5.2" stroke-linecap="round"></line>
-                <line id="rMinHand" x1="100" y1="118" x2="100" y2="34" stroke="white" stroke-width="3.5" stroke-linecap="round"></line>
-                <line id="rSecHand" x1="100" y1="122" x2="100" y2="24" stroke="#72e9ff" stroke-width="2" stroke-linecap="round"></line>
-                <circle cx="100" cy="100" r="5" fill="#72e9ff"></circle>
-                <circle cx="100" cy="100" r="2" fill="white"></circle>
-              </svg>
-            </div>
-          </div>
           <div class="return-divider"></div>
-          <div class="return-label">Vrátím se</div>
+          <div class="return-label">Vrátím se ve</div>
           <div id="returnTimeBig" class="return-time-big">—</div>
         </section>
 
@@ -766,12 +723,6 @@
     const timerProgressFill = document.getElementById('timerProgressFill');
 
     const returnTimeBig = document.getElementById('returnTimeBig');
-    const returnNowDigital = document.getElementById('returnNowDigital');
-    const returnAnalogWrap = document.getElementById('returnAnalogWrap');
-    const rHrHand = document.getElementById('rHrHand');
-    const rMinHand = document.getElementById('rMinHand');
-    const rSecHand = document.getElementById('rSecHand');
-    const rClockTicks = document.getElementById('rClockTicks');
 
     const digitalClockWrap = document.getElementById('digitalClockWrap');
     const digitalTime = document.getElementById('digitalTime');
@@ -838,7 +789,6 @@
       const m = String(now.getMinutes()).padStart(2, '0');
       const hm = `${h}:${m}`;
       digitalTime.textContent = hm;
-      returnNowDigital.textContent = hm;
       clockDate.textContent = `${DAYS[now.getDay()]}, ${now.getDate()}. ${MONTHS[now.getMonth()]}`;
 
       const s = now.getSeconds();
@@ -851,9 +801,6 @@
       rotateHand(secHand, secDeg);
       rotateHand(minHand, minDeg);
       rotateHand(hrHand, hrDeg);
-      rotateHand(rSecHand, secDeg);
-      rotateHand(rMinHand, minDeg);
-      rotateHand(rHrHand, hrDeg);
     }
 
     function startClock() {
@@ -881,8 +828,6 @@
       currentClockStyle = style;
       digitalClockWrap.classList.toggle('hidden', style !== 'digital');
       analogClock.classList.toggle('hidden', style !== 'analog');
-      returnNowDigital.classList.toggle('hidden', style !== 'digital');
-      returnAnalogWrap.classList.toggle('hidden', style !== 'analog');
     }
 
     function renderTimer(state) {
@@ -1010,7 +955,6 @@
     }
 
     buildTicks(clockTicks);
-    buildTicks(rClockTicks);
     window.addEventListener('resize', () => {
       logoMotionSignature = '';
       if (latestState) renderLogo(latestState);
