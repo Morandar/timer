@@ -125,6 +125,33 @@
       justify-content: flex-end;
     }
 
+    .view-nav {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .view-btn {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted-strong);
+      padding: 9px 13px;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .view-btn.active {
+      background: rgba(109,229,255,0.16);
+      color: var(--blue-soft);
+    }
+
     .status-chip,
     .action-btn,
     .mini-chip,
@@ -359,6 +386,277 @@
       border-bottom: 1px solid var(--line);
       margin-bottom: 24px;
     }
+
+    .kiosk-status-panel {
+      margin: -4px 0 24px;
+      padding: 18px;
+      border: 1px solid rgba(109,229,255,0.20);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 100% 0, rgba(109,229,255,0.12), transparent 42%),
+        rgba(255,255,255,0.035);
+    }
+
+    .kiosk-status-head,
+    .active-pause-row,
+    .analytics-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .kiosk-status-title {
+      font-size: 1.05rem;
+      font-weight: 790;
+      letter-spacing: -0.03em;
+    }
+
+    .kiosk-status-copy {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .status-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .kiosk-status-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 7px;
+      align-items: stretch;
+    }
+
+    .kiosk-status-card {
+      appearance: none;
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(3,8,20,0.42);
+      color: var(--text);
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 130ms ease, border-color 130ms ease, background 130ms ease;
+    }
+
+    .kiosk-status-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(109,229,255,0.46);
+      background: rgba(109,229,255,0.10);
+    }
+
+    .kiosk-status-name {
+      display: block;
+      font-weight: 760;
+      letter-spacing: -0.02em;
+    }
+
+    .kiosk-status-meta {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .kiosk-status-edit {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      padding: 0 10px;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .kiosk-status-edit:hover { color: var(--blue-soft); border-color: rgba(109,229,255,0.36); }
+
+    .active-pause-row {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,193,92,0.26);
+      border-radius: 16px;
+      background: rgba(255,193,92,0.08);
+    }
+
+    .active-pause-label {
+      color: #ffe4a9;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .active-pause-name { margin-top: 3px; font-weight: 750; }
+
+    .kiosk-status-editor {
+      margin-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .kiosk-status-editor summary {
+      padding-top: 14px;
+      color: var(--muted-strong);
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 720;
+    }
+
+    .status-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .status-form .form-span { grid-column: 1 / -1; }
+
+    .status-form select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(3,8,20,0.6);
+      color: var(--text);
+      padding: 15px 16px;
+      font: inherit;
+    }
+
+    .status-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      grid-column: 1 / -1;
+    }
+
+    .analytics-workspace {
+      display: grid;
+      gap: 18px;
+    }
+
+    .analytics-heading {
+      padding: 6px 0 2px;
+    }
+
+    .analytics-heading h2 {
+      font-size: clamp(1.65rem, 3vw, 2.5rem);
+      letter-spacing: -0.05em;
+    }
+
+    .analytics-heading p {
+      margin-top: 7px;
+      color: var(--muted);
+      max-width: 55ch;
+      line-height: 1.5;
+    }
+
+    .analytics-range { display: flex; gap: 7px; flex-wrap: wrap; }
+
+    .analytics-range button {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.04);
+      color: var(--muted-strong);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .analytics-range button.active {
+      color: var(--blue-soft);
+      border-color: rgba(109,229,255,0.36);
+      background: rgba(109,229,255,0.12);
+    }
+
+    .analytics-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .analytics-metric {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255,255,255,0.035);
+    }
+
+    .analytics-metric-label {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .analytics-metric-value {
+      margin-top: 9px;
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.35rem);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 18px;
+    }
+
+    .hour-chart {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 7px;
+      align-items: end;
+      min-height: 156px;
+      margin-top: 18px;
+    }
+
+    .hour-bar {
+      display: grid;
+      grid-template-rows: minmax(8px, 1fr) auto;
+      gap: 7px;
+      min-height: 156px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-align: center;
+    }
+
+    .hour-bar-fill {
+      align-self: end;
+      min-height: 3px;
+      border-radius: 8px 8px 3px 3px;
+      background: linear-gradient(180deg, var(--blue-soft), var(--blue));
+      opacity: 0.88;
+    }
+
+    .pause-log { display: grid; gap: 8px; }
+
+    .pause-log-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .pause-log-row:last-child { border-bottom: 0; }
+    .pause-log-name { font-weight: 740; }
+    .pause-log-meta { margin-top: 3px; color: var(--muted); font-size: 0.82rem; }
+    .pause-log-duration { color: var(--blue-soft); font-weight: 800; align-self: center; }
+    .analytics-empty { color: var(--muted); line-height: 1.5; }
 
     .editor-title-wrap { min-width: 0; }
 
@@ -1075,6 +1373,8 @@
       .font-settings {
         grid-template-columns: 1fr;
       }
+      .analytics-metrics,
+      .analytics-grid { grid-template-columns: 1fr; }
       .hero-stat { min-width: 0; }
     }
 
@@ -1103,6 +1403,14 @@
       .seg-group { width: 100%; }
       .seg-btn { min-width: 0; }
       .font-choice-group { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .status-card-grid,
+      .status-form { grid-template-columns: 1fr; }
+      .status-form .form-span,
+      .status-form-actions { grid-column: auto; }
+      .analytics-heading,
+      .active-pause-row { align-items: stretch; flex-direction: column; }
+      .analytics-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hour-chart { grid-template-columns: repeat(8, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -1118,6 +1426,10 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <nav class="view-nav" aria-label="Sekce ovládání">
+          <button class="view-btn active" type="button" data-view="control">Ovládání</button>
+          <button class="view-btn" type="button" data-view="analytics">Pauzy</button>
+        </nav>
         <div id="connectionStatus" class="status-chip">
           <span id="connectionDot" class="status-dot"></span>
           <span id="connectionLabel">Čekám na display URL</span>
@@ -1126,7 +1438,7 @@
       </div>
     </header>
 
-    <div class="workspace">
+    <div id="controlWorkspace" class="workspace">
       <aside class="column left-column">
         <section class="panel">
           <div class="panel-head">
@@ -1261,6 +1573,57 @@
                 <div id="heroStatNote" class="hero-stat-note">Nastavený čas pro další spuštění.</div>
               </div>
             </div>
+
+            <section class="kiosk-status-panel" aria-label="Rychlé stavy kiosku">
+              <div class="kiosk-status-head">
+                <div>
+                  <div class="panel-kicker">Rychlé stavy kiosku</div>
+                  <div class="kiosk-status-title">Co zákazník právě uvidí</div>
+                  <div class="kiosk-status-copy">Vybraný stav otevře pauzu v historii automaticky.</div>
+                </div>
+              </div>
+              <div id="activePauseBox" class="active-pause-row hidden">
+                <div>
+                  <div class="active-pause-label">Aktivní pauza</div>
+                  <div id="activePauseName" class="active-pause-name">—</div>
+                </div>
+                <button id="endKioskPauseBtn" class="launch-btn secondary" type="button">Ukončit a zobrazit logo</button>
+              </div>
+              <div id="kioskStatusList" class="status-card-grid"></div>
+              <details id="kioskStatusEditor" class="kiosk-status-editor">
+                <summary>Spravovat stavy kiosku</summary>
+                <input id="kioskStatusId" type="hidden" />
+                <div class="status-form">
+                  <div>
+                    <label class="field-label" for="kioskStatusName">Název</label>
+                    <input id="kioskStatusName" type="text" maxlength="80" placeholder="Např. Krátká pauza" />
+                  </div>
+                  <div>
+                    <label class="field-label" for="kioskStatusMode">Zobrazení</label>
+                    <select id="kioskStatusMode">
+                      <option value="pause">Pauza</option>
+                      <option value="return">Vrátím se ve</option>
+                      <option value="timer">Odpočet</option>
+                      <option value="text">Velká zpráva</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="field-label" for="kioskStatusDuration">Délka v minutách</label>
+                    <input id="kioskStatusDuration" type="number" min="0" max="999" value="0" inputmode="numeric" />
+                  </div>
+                  <div class="form-span">
+                    <label class="field-label" for="kioskStatusMessage">Text pro zákazníka</label>
+                    <input id="kioskStatusMessage" type="text" maxlength="200" placeholder="Např. Za chvíli jsme zpět." />
+                  </div>
+                  <div class="field-note form-span">Délka automaticky nastaví návratový čas nebo spustí odpočet. Každý rychlý stav se započítá do historie pauz.</div>
+                  <div class="status-form-actions">
+                    <button id="newKioskStatusBtn" class="launch-btn" type="button">Nový stav</button>
+                    <button id="saveKioskStatusBtn" class="launch-btn primary" type="button">Uložit stav</button>
+                    <button id="deleteKioskStatusBtn" class="launch-btn danger hidden" type="button">Smazat</button>
+                  </div>
+                </div>
+              </details>
+            </section>
 
             <div id="timerCtrl" class="scene-editor visible">
               <div class="editor-grid">
@@ -1494,11 +1857,82 @@
         </section>
       </aside>
     </div>
+
+    <section id="analyticsWorkspace" class="analytics-workspace" hidden>
+      <div class="analytics-heading">
+        <div>
+          <div class="panel-kicker">Historie kiosku</div>
+          <h2>Pauzy a dostupnost obsluhy</h2>
+          <p>Každý rychlý stav eviduje čas spuštění, skutečnou délku a použitý zákaznický text.</p>
+        </div>
+        <div class="analytics-range" role="group" aria-label="Rozsah statistik">
+          <button type="button" data-analytics-days="7">7 dní</button>
+          <button type="button" data-analytics-days="30" class="active">30 dní</button>
+          <button type="button" data-analytics-days="90">90 dní</button>
+        </div>
+      </div>
+
+      <div class="analytics-metrics">
+        <article class="analytics-metric">
+          <div class="analytics-metric-label">Počet pauz</div>
+          <div id="pauseMetricCount" class="analytics-metric-value">—</div>
+        </article>
+        <article class="analytics-metric">
+          <div class="analytics-metric-label">Celková délka</div>
+          <div id="pauseMetricTotal" class="analytics-metric-value">—</div>
+        </article>
+        <article class="analytics-metric">
+          <div class="analytics-metric-label">Průměr pauzy</div>
+          <div id="pauseMetricAverage" class="analytics-metric-value">—</div>
+        </article>
+        <article class="analytics-metric">
+          <div class="analytics-metric-label">Aktuálně</div>
+          <div id="pauseMetricActive" class="analytics-metric-value">—</div>
+        </article>
+      </div>
+
+      <div class="analytics-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Kdy se pouští</div>
+              <div class="panel-title">Pauzy podle hodin</div>
+              <div class="panel-subtitle">Počet spuštění v českém čase.</div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="pauseHourChart" class="hour-chart"></div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-kicker">Typy</div>
+              <div class="panel-title">Nejčastější stavy</div>
+            </div>
+          </div>
+          <div id="pauseStatusSummary" class="panel-body pause-log"></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Detail</div>
+            <div class="panel-title">Poslední pauzy</div>
+            <div class="panel-subtitle">Skutečná délka se doplní po ukončení pauzy.</div>
+          </div>
+        </div>
+        <div id="pauseEventList" class="panel-body pause-log"></div>
+      </section>
+    </section>
   </div>
 
   <script>
     let st = null;
     let tmpls = [];
+    let kioskStatuses = [];
+    let analyticsDays = 30;
 
     const SCENES = {
       timer:  { code: 'TMR', title: 'Odpočet', desc: 'Nastav délku a spusť odpočet.', state: (s) => s.running ? `Běží ${fmt(s.remainingSeconds)}` : s.finished ? 'Čas vypršel' : `Připraveno ${fmt(s.durationSeconds)}` },
@@ -1559,6 +1993,9 @@
     const connectionLabel = document.getElementById('connectionLabel');
     const openDisplayBtn = document.getElementById('openDisplayBtn');
     const previewFrame = document.getElementById('previewFrame');
+    const controlWorkspace = document.getElementById('controlWorkspace');
+    const analyticsWorkspace = document.getElementById('analyticsWorkspace');
+    const viewBtns = document.querySelectorAll('[data-view]');
 
     const minutesInput = document.getElementById('minutesInput');
     const setDurBtn = document.getElementById('setDurBtn');
@@ -1603,9 +2040,57 @@
     const qrFallback = document.getElementById('qrFallback');
     const netInfo = document.getElementById('netInfo');
 
+    const kioskStatusList = document.getElementById('kioskStatusList');
+    const activePauseBox = document.getElementById('activePauseBox');
+    const activePauseName = document.getElementById('activePauseName');
+    const endKioskPauseBtn = document.getElementById('endKioskPauseBtn');
+    const kioskStatusEditor = document.getElementById('kioskStatusEditor');
+    const kioskStatusId = document.getElementById('kioskStatusId');
+    const kioskStatusName = document.getElementById('kioskStatusName');
+    const kioskStatusMode = document.getElementById('kioskStatusMode');
+    const kioskStatusDuration = document.getElementById('kioskStatusDuration');
+    const kioskStatusMessage = document.getElementById('kioskStatusMessage');
+    const newKioskStatusBtn = document.getElementById('newKioskStatusBtn');
+    const saveKioskStatusBtn = document.getElementById('saveKioskStatusBtn');
+    const deleteKioskStatusBtn = document.getElementById('deleteKioskStatusBtn');
+
+    const pauseMetricCount = document.getElementById('pauseMetricCount');
+    const pauseMetricTotal = document.getElementById('pauseMetricTotal');
+    const pauseMetricAverage = document.getElementById('pauseMetricAverage');
+    const pauseMetricActive = document.getElementById('pauseMetricActive');
+    const pauseHourChart = document.getElementById('pauseHourChart');
+    const pauseStatusSummary = document.getElementById('pauseStatusSummary');
+    const pauseEventList = document.getElementById('pauseEventList');
+    const analyticsRangeBtns = document.querySelectorAll('[data-analytics-days]');
+
     function fmt(seconds) {
       const n = Math.max(0, Number(seconds) || 0);
       return `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    }
+
+    function fmtDuration(seconds) {
+      const n = Math.max(0, Math.round(Number(seconds) || 0));
+      const hours = Math.floor(n / 3600);
+      const minutes = Math.floor((n % 3600) / 60);
+      if (hours) return `${hours} h ${minutes} min`;
+      if (minutes) return `${minutes} min`;
+      return `${n} s`;
+    }
+
+    function fmtDateTime(timestamp) {
+      if (!timestamp) return '—';
+      return new Intl.DateTimeFormat('cs-CZ', {
+        timeZone: 'Europe/Prague',
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(new Date(timestamp));
+    }
+
+    function kioskModeLabel(mode) {
+      return ({ pause: 'Pauza', return: 'Vrátím se ve', timer: 'Odpočet', text: 'Velká zpráva' })[mode] || 'Pauza';
     }
 
     function trimText(text, max) {
@@ -1731,6 +2216,103 @@
         .replace(/"/g, '&quot;');
     }
 
+    function resetKioskStatusForm() {
+      kioskStatusId.value = '';
+      kioskStatusName.value = '';
+      kioskStatusMode.value = 'pause';
+      kioskStatusDuration.value = '0';
+      kioskStatusMessage.value = '';
+      deleteKioskStatusBtn.classList.add('hidden');
+    }
+
+    function editKioskStatus(id) {
+      const status = kioskStatuses.find((item) => item.id === id);
+      if (!status) return;
+      kioskStatusId.value = status.id;
+      kioskStatusName.value = status.name;
+      kioskStatusMode.value = status.mode;
+      kioskStatusDuration.value = String(status.durationMinutes || 0);
+      kioskStatusMessage.value = status.message || '';
+      deleteKioskStatusBtn.classList.remove('hidden');
+      kioskStatusEditor.open = true;
+      kioskStatusName.focus();
+    }
+
+    function renderKioskStatuses() {
+      if (!kioskStatuses.length) {
+        kioskStatusList.innerHTML = '<div class="analytics-empty">Zatím nemáš žádný rychlý stav. Vytvoř ho přes „Spravovat stavy kiosku“.</div>';
+        return;
+      }
+
+      kioskStatusList.innerHTML = kioskStatuses.map((status) => {
+        const meta = [kioskModeLabel(status.mode)];
+        if (status.durationMinutes) meta.push(`${status.durationMinutes} min`);
+        return `
+          <div class="kiosk-status-item">
+            <button type="button" class="kiosk-status-card" data-kiosk-status-id="${escHtml(status.id)}">
+              <span class="kiosk-status-name">${escHtml(status.name)}</span>
+              <span class="kiosk-status-meta">${escHtml(meta.join(' · '))}</span>
+            </button>
+            <button type="button" class="kiosk-status-edit" data-kiosk-edit-id="${escHtml(status.id)}" aria-label="Upravit ${escHtml(status.name)}">Upravit</button>
+          </div>`;
+      }).join('');
+    }
+
+    async function loadKioskStatuses() {
+      try {
+        const res = await fetch('/api/kiosk-statuses', { cache: 'no-store' });
+        kioskStatuses = await res.json();
+        renderKioskStatuses();
+      } catch {
+        kioskStatusList.innerHTML = '<div class="analytics-empty">Stavy kiosku se nepodařilo načíst.</div>';
+      }
+    }
+
+    function renderPauseAnalytics(data) {
+      const summary = data.summary || {};
+      pauseMetricCount.textContent = String(summary.count || 0);
+      pauseMetricTotal.textContent = fmtDuration(summary.totalSeconds);
+      pauseMetricAverage.textContent = fmtDuration(summary.averageSeconds);
+      pauseMetricActive.textContent = summary.activePause ? fmtDuration(summary.activePause.durationSeconds) : 'Volno';
+
+      const maxCount = Math.max(1, ...(data.byHour || []).map((item) => item.count));
+      pauseHourChart.innerHTML = (data.byHour || []).map((item) => {
+        const height = item.count ? Math.max(10, Math.round((item.count / maxCount) * 130)) : 3;
+        return `<div class="hour-bar" title="${item.hour}:00 - ${item.count} pauz"><div class="hour-bar-fill" style="height:${height}px"></div><span>${String(item.hour).padStart(2, '0')}</span></div>`;
+      }).join('');
+
+      const statusRows = data.byStatus || [];
+      pauseStatusSummary.innerHTML = statusRows.length
+        ? statusRows.map((item) => `<div class="pause-log-row"><div><div class="pause-log-name">${escHtml(item.name)}</div><div class="pause-log-meta">${item.count}× spuštěno</div></div><div class="pause-log-duration">${fmtDuration(item.totalSeconds)}</div></div>`).join('')
+        : '<div class="analytics-empty">Ve zvoleném období zatím žádná pauza nezačala.</div>';
+
+      const eventRows = data.events || [];
+      pauseEventList.innerHTML = eventRows.length
+        ? eventRows.map((event) => {
+          const planned = event.plannedMinutes ? ` · plán ${event.plannedMinutes} min` : '';
+          const current = event.endedAt ? '' : ' · probíhá';
+          return `<div class="pause-log-row"><div><div class="pause-log-name">${escHtml(event.statusName)}</div><div class="pause-log-meta">${fmtDateTime(event.startedAt)}${planned}${current}</div></div><div class="pause-log-duration">${fmtDuration(event.durationSeconds)}</div></div>`;
+        }).join('')
+        : '<div class="analytics-empty">Ve zvoleném období zatím není co zobrazit.</div>';
+    }
+
+    async function loadPauseAnalytics() {
+      try {
+        const res = await fetch(`/api/pause-analytics?days=${analyticsDays}`, { cache: 'no-store' });
+        renderPauseAnalytics(await res.json());
+      } catch {
+        pauseEventList.innerHTML = '<div class="analytics-empty">Statistiky pauz se nepodařilo načíst.</div>';
+      }
+    }
+
+    function setView(view) {
+      const analytics = view === 'analytics';
+      controlWorkspace.hidden = analytics;
+      analyticsWorkspace.hidden = !analytics;
+      viewBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.view === view));
+      if (analytics) loadPauseAnalytics();
+    }
+
     async function loadTemplates() {
       try {
         const res = await fetch('/api/templates', { cache: 'no-store' });
@@ -1813,6 +2395,13 @@
 
       renderEditorMeta(state);
 
+      const activePause = state.activePause;
+      activePauseBox.classList.toggle('hidden', !activePause);
+      if (activePause) {
+        const plan = activePause.plannedMinutes ? ` · plán ${activePause.plannedMinutes} min` : '';
+        activePauseName.textContent = `${activePause.statusName}${plan}`;
+      }
+
       if (document.activeElement !== minutesInput) minutesInput.value = String(Math.floor(state.durationSeconds / 60));
       startPauseBtn.textContent = state.running ? 'Pauza' : 'Start';
       startPauseBtn.className = state.running ? 'launch-btn primary' : 'launch-btn secondary';
@@ -1850,6 +2439,77 @@
 
     modeBtns.forEach((btn) => {
       btn.addEventListener('click', () => send('set-main-mode', { mode: btn.dataset.mode }).catch(() => {}));
+    });
+
+    viewBtns.forEach((btn) => {
+      btn.addEventListener('click', () => setView(btn.dataset.view));
+    });
+
+    kioskStatusList.addEventListener('click', async (event) => {
+      const editButton = event.target.closest('[data-kiosk-edit-id]');
+      if (editButton) {
+        editKioskStatus(editButton.dataset.kioskEditId);
+        return;
+      }
+      const statusButton = event.target.closest('[data-kiosk-status-id]');
+      if (!statusButton) return;
+      try {
+        await send('activate-kiosk-status', { id: statusButton.dataset.kioskStatusId });
+        if (!analyticsWorkspace.hidden) loadPauseAnalytics();
+      } catch {}
+    });
+
+    endKioskPauseBtn.addEventListener('click', async () => {
+      try {
+        await send('end-kiosk-pause');
+        if (!analyticsWorkspace.hidden) loadPauseAnalytics();
+      } catch {}
+    });
+
+    newKioskStatusBtn.addEventListener('click', () => {
+      resetKioskStatusForm();
+      kioskStatusEditor.open = true;
+      kioskStatusName.focus();
+    });
+
+    saveKioskStatusBtn.addEventListener('click', async () => {
+      const name = kioskStatusName.value.trim();
+      if (!name) { kioskStatusName.focus(); return; }
+      const original = saveKioskStatusBtn.textContent;
+      saveKioskStatusBtn.textContent = 'Ukládám…';
+      try {
+        await send('save-kiosk-status', {
+          id: kioskStatusId.value || undefined,
+          name,
+          mode: kioskStatusMode.value,
+          durationMinutes: kioskStatusDuration.value,
+          message: kioskStatusMessage.value,
+        });
+        await loadKioskStatuses();
+        resetKioskStatusForm();
+        kioskStatusEditor.open = false;
+      } finally {
+        saveKioskStatusBtn.textContent = original;
+      }
+    });
+
+    deleteKioskStatusBtn.addEventListener('click', async () => {
+      if (!kioskStatusId.value) return;
+      if (!confirm(`Smazat stav „${kioskStatusName.value || 'bez názvu'}“?`)) return;
+      try {
+        await send('delete-kiosk-status', { id: kioskStatusId.value });
+        await loadKioskStatuses();
+        resetKioskStatusForm();
+        kioskStatusEditor.open = false;
+      } catch {}
+    });
+
+    analyticsRangeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        analyticsDays = Number(btn.dataset.analyticsDays) || 30;
+        analyticsRangeBtns.forEach((item) => item.classList.toggle('active', item === btn));
+        loadPauseAnalytics();
+      });
     });
 
     document.querySelectorAll('.launch-btn[data-mode]').forEach((btn) => {
@@ -1982,7 +2642,10 @@
     });
 
     const es = new EventSource('/events');
-    es.onmessage = (e) => render(JSON.parse(e.data));
+    es.onmessage = (e) => {
+      render(JSON.parse(e.data));
+      if (!analyticsWorkspace.hidden) loadPauseAnalytics();
+    };
     es.onerror = () => setTimeout(() => location.reload(), 4000);
 
     fetch('/api/state', { cache: 'no-store' })
@@ -1993,6 +2656,10 @@
     previewFrame.addEventListener('load', () => { if (st) syncPreview(st); });
 
     loadTemplates();
+    loadKioskStatuses();
+    setInterval(() => {
+      if (!analyticsWorkspace.hidden) loadPauseAnalytics();
+    }, 30000);
   </script>
 </body>
 </html>

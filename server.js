@@ -28,6 +28,9 @@ const VALID_DISPLAY_FONTS = ['din', 'avenir', 'mono', 'serif'];
 const DATA_DIR = process.env.DATA_DIR || ROOT;
 const TEMPLATES_FILE = path.join(DATA_DIR, 'templates.json');
 const STATE_FILE = path.join(DATA_DIR, 'state.json');
+const KIOSK_STATUSES_FILE = path.join(DATA_DIR, 'kiosk-statuses.json');
+const PAUSE_EVENTS_FILE = path.join(DATA_DIR, 'pause-events.json');
+const VALID_KIOSK_STATUS_MODES = ['pause', 'return', 'timer', 'text'];
 
 const DEFAULT_STATE = {
   mainMode: 'timer',
@@ -48,10 +51,44 @@ const DEFAULT_STATE = {
   showContact: false,
   contactName: '',
   contactPhone: '',
+  activePauseId: null,
   updatedAt: Date.now(),
 };
 
+const DEFAULT_KIOSK_STATUSES = [
+  {
+    id: 'quick-break',
+    name: 'Krátká pauza',
+    mode: 'return',
+    durationMinutes: 10,
+    message: 'Omlouváme se, za chvíli jsme zpět.',
+  },
+  {
+    id: 'lunch-break',
+    name: 'Oběd',
+    mode: 'return',
+    durationMinutes: 30,
+    message: 'Právě máme oběd. Děkujeme za trpělivost.',
+  },
+  {
+    id: 'serving-customer',
+    name: 'Obsluhuji zákazníka',
+    mode: 'pause',
+    durationMinutes: 0,
+    message: 'Právě obsluhujeme zákazníka. Za chvíli jsme k dispozici.',
+  },
+  {
+    id: 'technical-break',
+    name: 'Technická přestávka',
+    mode: 'pause',
+    durationMinutes: 0,
+    message: 'Probíhá krátká technická přestávka.',
+  },
+];
+
 let templates = [];
+let kioskStatuses = [];
+let pauseEvents = [];
 
 function ensureDataDir() {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
@@ -72,7 +109,75 @@ function saveTemplates() {
   } catch {}
 }
 
+function makeId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeKioskStatus(raw, fallback = {}) {
+  const mode = VALID_KIOSK_STATUS_MODES.includes(raw?.mode) ? raw.mode : (fallback.mode || 'pause');
+  return {
+    id: String(raw?.id || fallback.id || makeId('status')).slice(0, 80),
+    name: String(raw?.name || fallback.name || '').trim().slice(0, 80),
+    mode,
+    durationMinutes: clampInt(raw?.durationMinutes, 0, 999, fallback.durationMinutes || 0),
+    message: String(raw?.message || '').trim().slice(0, 200),
+    createdAt: Number(raw?.createdAt) || fallback.createdAt || Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
+function loadKioskStatuses() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(KIOSK_STATUSES_FILE, 'utf8'));
+    kioskStatuses = Array.isArray(raw) ? raw.map((item) => normalizeKioskStatus(item)).filter((item) => item.name) : [];
+  } catch {
+    kioskStatuses = DEFAULT_KIOSK_STATUSES.map((item) => normalizeKioskStatus(item, item));
+    saveKioskStatuses();
+  }
+}
+
+function saveKioskStatuses() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(KIOSK_STATUSES_FILE, JSON.stringify(kioskStatuses, null, 2));
+  } catch {}
+}
+
+function normalizePauseEvent(raw) {
+  const startedAt = Number(raw?.startedAt);
+  if (!Number.isFinite(startedAt)) return null;
+  const endedAt = raw?.endedAt == null ? null : Number(raw.endedAt);
+  return {
+    id: String(raw?.id || makeId('pause')).slice(0, 90),
+    statusId: raw?.statusId ? String(raw.statusId).slice(0, 80) : null,
+    statusName: String(raw?.statusName || 'Pauza').slice(0, 100),
+    mode: VALID_KIOSK_STATUS_MODES.includes(raw?.mode) ? raw.mode : 'pause',
+    plannedMinutes: clampInt(raw?.plannedMinutes, 0, 999, 0),
+    startedAt,
+    endedAt: Number.isFinite(endedAt) ? endedAt : null,
+    endReason: raw?.endReason ? String(raw.endReason).slice(0, 60) : null,
+  };
+}
+
+function loadPauseEvents() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(PAUSE_EVENTS_FILE, 'utf8'));
+    pauseEvents = Array.isArray(raw) ? raw.map(normalizePauseEvent).filter(Boolean).slice(0, 1000) : [];
+  } catch {
+    pauseEvents = [];
+  }
+}
+
+function savePauseEvents() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(PAUSE_EVENTS_FILE, JSON.stringify(pauseEvents.slice(0, 1000), null, 2));
+  } catch {}
+}
+
 loadTemplates();
+loadKioskStatuses();
+loadPauseEvents();
 
 const state = { ...DEFAULT_STATE };
 
@@ -146,6 +251,7 @@ function normalizeState(raw) {
   next.showContact = Boolean(raw.showContact);
   next.contactName = String(raw.contactName || '').slice(0, 100);
   next.contactPhone = String(raw.contactPhone || '').slice(0, 30);
+  next.activePauseId = raw.activePauseId ? String(raw.activePauseId).slice(0, 90) : null;
   next.updatedAt = Number.isFinite(Number(raw.updatedAt)) ? Number(raw.updatedAt) : Date.now();
 
   if (!next.running) next.endsAt = null;
@@ -175,6 +281,7 @@ function persistableState() {
     showContact: state.showContact,
     contactName: state.contactName,
     contactPhone: state.contactPhone,
+    activePauseId: state.activePauseId,
     updatedAt: state.updatedAt,
   };
 }
@@ -196,9 +303,83 @@ function saveState() {
 
 loadState();
 
+function getActivePauseEvent() {
+  if (!state.activePauseId) return null;
+  return pauseEvents.find((event) => event.id === state.activePauseId && !event.endedAt) || null;
+}
+
+function getPauseDurationSeconds(event, now = Date.now()) {
+  if (!event) return 0;
+  return Math.max(0, Math.round(((event.endedAt || now) - event.startedAt) / 1000));
+}
+
+function startPauseEvent({ statusId = null, statusName = 'Pauza', mode = 'pause', plannedMinutes = 0, startedAt = Date.now() } = {}) {
+  const active = getActivePauseEvent();
+  if (active) return active;
+
+  const event = {
+    id: makeId('pause'),
+    statusId,
+    statusName: String(statusName || 'Pauza').slice(0, 100),
+    mode: VALID_KIOSK_STATUS_MODES.includes(mode) ? mode : 'pause',
+    plannedMinutes: clampInt(plannedMinutes, 0, 999, 0),
+    startedAt,
+    endedAt: null,
+    endReason: null,
+  };
+  pauseEvents.unshift(event);
+  state.activePauseId = event.id;
+  savePauseEvents();
+  return event;
+}
+
+function endPauseEvent(reason = 'manual') {
+  const active = getActivePauseEvent();
+  state.activePauseId = null;
+  if (!active) return null;
+  active.endedAt = Date.now();
+  active.endReason = reason;
+  savePauseEvents();
+  return active;
+}
+
+function getCzechTimePlusMinutes(minutes) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Prague',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(Date.now() + minutes * 60 * 1000));
+  const hour = parts.find((part) => part.type === 'hour')?.value || '00';
+  const minute = parts.find((part) => part.type === 'minute')?.value || '00';
+  return `${hour}:${minute}`;
+}
+
+function getCzechHour(timestamp) {
+  const value = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Prague',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date(timestamp));
+  return Math.max(0, Math.min(23, Number(value) || 0));
+}
+
+function recoverActivePause() {
+  const active = getActivePauseEvent();
+  if (active) return;
+  state.activePauseId = null;
+  if (state.mainMode === 'pause') {
+    startPauseEvent({ statusName: 'Pauza', mode: 'pause', startedAt: state.updatedAt || Date.now() });
+    saveState();
+  }
+}
+
+recoverActivePause();
+
 function createSnapshot() {
   syncTimer();
   const base = getPublicBaseUrl();
+  const activePause = getActivePauseEvent();
   return {
     mainMode: state.mainMode,
     durationSeconds: state.durationSeconds,
@@ -218,6 +399,14 @@ function createSnapshot() {
     showContact: state.showContact,
     contactName: state.contactName,
     contactPhone: state.contactPhone,
+    activePause: activePause ? {
+      id: activePause.id,
+      statusName: activePause.statusName,
+      mode: activePause.mode,
+      plannedMinutes: activePause.plannedMinutes,
+      startedAt: activePause.startedAt,
+      durationSeconds: getPauseDurationSeconds(activePause),
+    } : null,
     updatedAt: state.updatedAt,
     displayUrl: base ? `${base}/display` : null,
     controlUrl: base ? `${base}/control` : null,
@@ -264,14 +453,124 @@ function readBody(req) {
   });
 }
 
+function setMainMode(mode, reason = 'scene-change') {
+  if (!VALID_MAIN_MODES.includes(mode)) throw new Error('Neplatný mód.');
+  const active = getActivePauseEvent();
+
+  if (mode === 'pause') {
+    if (active && active.mode !== 'pause') {
+      endPauseEvent(reason);
+      state.showSubtitle = false;
+    }
+    state.mainMode = mode;
+    if (!getActivePauseEvent()) startPauseEvent({ statusName: 'Pauza', mode: 'pause' });
+  } else {
+    if (active) {
+      endPauseEvent(reason);
+      state.showSubtitle = false;
+    }
+    state.mainMode = mode;
+  }
+
+  state.updatedAt = Date.now();
+}
+
+function activateKioskStatus(status) {
+  endPauseEvent('status-change');
+  state.mainMode = status.mode;
+  state.running = false;
+  state.finished = false;
+  state.endsAt = null;
+
+  if (status.mode === 'return') {
+    state.returnTime = status.durationMinutes > 0
+      ? getCzechTimePlusMinutes(status.durationMinutes)
+      : state.returnTime;
+  }
+
+  if (status.mode === 'timer') {
+    state.durationSeconds = status.durationMinutes * 60;
+    state.remainingSeconds = state.durationSeconds;
+    if (state.remainingSeconds > 0) {
+      state.running = true;
+      state.endsAt = Date.now() + state.remainingSeconds * 1000;
+    }
+  }
+
+  if (status.mode === 'text') state.mainText = status.message;
+
+  if (status.mode !== 'text') {
+    state.subtitleText = status.message;
+    state.showSubtitle = Boolean(status.message);
+  }
+
+  startPauseEvent({
+    statusId: status.id,
+    statusName: status.name,
+    mode: status.mode,
+    plannedMinutes: status.durationMinutes,
+  });
+  state.updatedAt = Date.now();
+}
+
+function endKioskPause() {
+  endPauseEvent('ended');
+  state.running = false;
+  state.endsAt = null;
+  state.mainMode = 'logo';
+  state.showSubtitle = false;
+  state.updatedAt = Date.now();
+}
+
+function createPauseAnalytics(days) {
+  const safeDays = clampInt(days, 1, 90, 30);
+  const now = Date.now();
+  const from = now - safeDays * 24 * 60 * 60 * 1000;
+  const events = pauseEvents
+    .filter((event) => event.startedAt >= from)
+    .map((event) => ({ ...event, durationSeconds: getPauseDurationSeconds(event, now) }));
+  const totalSeconds = events.reduce((sum, event) => sum + event.durationSeconds, 0);
+  const byHour = Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0, totalSeconds: 0 }));
+  const byStatus = new Map();
+
+  for (const event of events) {
+    const hour = getCzechHour(event.startedAt);
+    byHour[hour].count += 1;
+    byHour[hour].totalSeconds += event.durationSeconds;
+    const key = event.statusName || 'Pauza';
+    const current = byStatus.get(key) || { name: key, count: 0, totalSeconds: 0 };
+    current.count += 1;
+    current.totalSeconds += event.durationSeconds;
+    byStatus.set(key, current);
+  }
+
+  const activePause = getActivePauseEvent();
+  return {
+    days: safeDays,
+    from,
+    to: now,
+    summary: {
+      count: events.length,
+      totalSeconds,
+      averageSeconds: events.length ? Math.round(totalSeconds / events.length) : 0,
+      activePause: activePause ? {
+        statusName: activePause.statusName,
+        startedAt: activePause.startedAt,
+        durationSeconds: getPauseDurationSeconds(activePause, now),
+      } : null,
+    },
+    byHour,
+    byStatus: [...byStatus.values()].sort((a, b) => b.count - a.count),
+    events: events.slice(0, 80),
+  };
+}
+
 function handleAction(payload) {
   if (!payload || typeof payload !== 'object') throw new Error('Chybí payload.');
 
   switch (payload.type) {
     case 'set-main-mode':
-      if (!VALID_MAIN_MODES.includes(payload.mode)) throw new Error('Neplatný mód.');
-      state.mainMode = payload.mode;
-      state.updatedAt = Date.now();
+      setMainMode(payload.mode);
       break;
 
     case 'set-duration': {
@@ -399,6 +698,7 @@ function handleAction(payload) {
     case 'activate-template': {
       const tmpl = templates.find((t) => t.id === String(payload.id));
       if (!tmpl) throw new Error('Šablona nenalezena.');
+      endPauseEvent('preset');
       state.mainMode = tmpl.mainMode;
       state.durationSeconds = (tmpl.durationMinutes || 0) * 60;
       state.remainingSeconds = state.durationSeconds;
@@ -418,6 +718,37 @@ function handleAction(payload) {
       state.contactName = tmpl.contactName || '';
       state.contactPhone = tmpl.contactPhone || '';
       state.updatedAt = Date.now();
+      break;
+    }
+
+    case 'activate-kiosk-status': {
+      const status = kioskStatuses.find((item) => item.id === String(payload.id));
+      if (!status) throw new Error('Stav kiosku nenalezen.');
+      activateKioskStatus(status);
+      break;
+    }
+
+    case 'end-kiosk-pause':
+      endKioskPause();
+      break;
+
+    case 'save-kiosk-status': {
+      const id = payload.id ? String(payload.id) : '';
+      const index = kioskStatuses.findIndex((item) => item.id === id);
+      const existing = index >= 0 ? kioskStatuses[index] : {};
+      const status = normalizeKioskStatus({ ...payload, id: id || undefined }, existing);
+      if (!status.name) throw new Error('Název stavu je povinný.');
+      if (index >= 0) kioskStatuses[index] = status;
+      else kioskStatuses.push(status);
+      saveKioskStatuses();
+      break;
+    }
+
+    case 'delete-kiosk-status': {
+      const index = kioskStatuses.findIndex((item) => item.id === String(payload.id));
+      if (index === -1) throw new Error('Stav kiosku nenalezen.');
+      kioskStatuses.splice(index, 1);
+      saveKioskStatuses();
       break;
     }
 
@@ -454,6 +785,16 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && url.pathname === '/api/templates') {
     sendJson(res, 200, templates);
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/kiosk-statuses') {
+    sendJson(res, 200, kioskStatuses);
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/pause-analytics') {
+    sendJson(res, 200, createPauseAnalytics(url.searchParams.get('days')));
     return;
   }
 
@@ -496,7 +837,7 @@ const server = http.createServer(async (req, res) => {
 
 setInterval(() => {
   syncTimer();
-  const key = `${state.mainMode}|${state.remainingSeconds}|${state.running}|${state.finished}|${state.mainText}|${state.returnTime}|${state.clockStyle}|${state.displayFont}|${state.clockFont}|${state.logoScale}|${state.logoMotion}|${state.showSubtitle}|${state.subtitleText}|${state.showContact}|${state.contactName}|${state.contactPhone}`;
+  const key = `${state.mainMode}|${state.remainingSeconds}|${state.running}|${state.finished}|${state.mainText}|${state.returnTime}|${state.clockStyle}|${state.displayFont}|${state.clockFont}|${state.logoScale}|${state.logoMotion}|${state.showSubtitle}|${state.subtitleText}|${state.showContact}|${state.contactName}|${state.contactPhone}|${state.activePauseId || ''}`;
   if (key !== lastKey) {
     if (!state.running || state.mainMode !== 'timer' || state.finished || state.remainingSeconds === 0) saveState();
     lastKey = key;
